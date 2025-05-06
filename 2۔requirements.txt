@@ -1,7 +1,0 @@
-streamlit
-pandas
-numpy
-requests
-seaborn
-matplotlib
-python-binance
