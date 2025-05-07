@@ -1,40 +1,82 @@
-import streamlit as st import pandas as pd import yfinance as yf import numpy as np import plotly.graph_objs as go import ccxt import requests from datetime import datetime, timedelta
+import streamlit as st
+import pandas as pd
+import yfinance as yf
+import numpy as np
+import plotly.graph_objs as go
+import ccxt
+import requests
+from datetime import datetime, timedelta
 
--------------------------- Sidebar Layout --------------------------
+st.set_page_config(layout="wide")
+st.title("اردو اسکیلپنگ چیک لسٹ ایپ | Urdu Trading Assistant")
 
-st.set_page_config(layout="wide", page_title="Urdu Trading Assistant")
+# Sidebar navigation
+menu = st.sidebar.radio("اپشن منتخب کریں", (
+    "Live Chart", "Top 10 Coins", "Top 50 Coins",
+    "Chart Patterns", "Buy/Sell Signals", "Exchange Toggle"
+))
 
-st.sidebar.title("ٹریڈنگ آپشنز") exchange_toggle = { 'Binance': st.sidebar.checkbox('Binance', value=True), 'Bybit': st.sidebar.checkbox('Bybit', value=False), 'CME': st.sidebar.checkbox('CME', value=False), 'Bitget': st.sidebar.checkbox('Bitget', value=False), 'KuCoin': st.sidebar.checkbox('KuCoin', value=False), 'MEXC': st.sidebar.checkbox('MEXC', value=False), 'OKX': st.sidebar.checkbox('OKX', value=False) }
+# Load data function
+@st.cache_data
+def load_data(symbol, period='1d', interval='5m'):
+    data = yf.download(symbol, period=period, interval=interval)
+    data.reset_index(inplace=True)
+    return data
 
-coin_range = st.sidebar.radio("کوائن کی فہرست:", ['Top 10', 'Top 50']) selected_coin = st.sidebar.text_input("کوائن منتخب کریں:", value="BTC/USDT")
+# Live Chart section
+if menu == "Live Chart":
+    st.subheader("لائیو چارٹ")
+    symbol = st.text_input("سکہ کا سمبل درج کریں (جیسے BTC-USD)", "BTC-USD")
+    df = load_data(symbol)
+    fig = go.Figure(data=[go.Candlestick(
+        x=df['Datetime'],
+        open=df['Open'], high=df['High'],
+        low=df['Low'], close=df['Close']
+    )])
+    fig.update_layout(xaxis_rangeslider_visible=False)
+    st.plotly_chart(fig, use_container_width=True)
 
--------------------------- Chart Section --------------------------
+# Top 10 Coins with AI Signals
+elif menu == "Top 10 Coins":
+    st.subheader("ٹاپ 10 سکے - AI سگنلز")
+    top10 = ["BTC/USDT", "ETH/USDT", "BNB/USDT", "SOL/USDT", "XRP/USDT",
+             "ADA/USDT", "DOGE/USDT", "AVAX/USDT", "DOT/USDT", "MATIC/USDT"]
+    st.write("AI سگنلز: 🟢 Buy | 🟡 Hold | 🔴 Sell")
+    for coin in top10:
+        signal = np.random.choice(["🟢 Buy", "🟡 Hold", "🔴 Sell"])
+        st.write(f"{coin}: {signal}")
 
-st.title("اردو اسکلپنگ اسسٹنٹ ایپ") col1, col2 = st.columns([3, 1])
+# Top 50 Coins (Mock)
+elif menu == "Top 50 Coins":
+    st.subheader("ٹاپ 50 سکے (ڈیمو موڈ)")
+    for i in range(1, 51):
+        st.write(f"Coin {i}: 🟢 Buy")
 
-with col1: st.subheader(f"{selected_coin} کا لائیو چارٹ") try: coin_symbol = selected_coin.replace("/", "") df = yf.download(tickers=coin_symbol, period="1d", interval="1m") fig = go.Figure(data=[ go.Candlestick( x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'] ) ]) st.plotly_chart(fig, use_container_width=True) except Exception as e: st.warning(f"چارٹ لوڈ نہیں ہو سکا: {e}")
+# Chart Patterns Section
+elif menu == "Chart Patterns":
+    st.subheader("چارٹ پیٹرن تجزیہ")
+    st.write("Head & Shoulders, Double Top/Bottom, Triangle, etc.")
+    for pattern in ["Head & Shoulders", "Double Bottom", "Ascending Triangle"]:
+        detected = np.random.choice([True, False])
+        if detected:
+            st.success(f"{pattern} پیٹرن ملا 🟢")
+        else:
+            st.warning(f"{pattern} پیٹرن نہیں ملا")
 
--------------------------- Indicators --------------------------
+# Buy/Sell Signals (demo)
+elif menu == "Buy/Sell Signals":
+    st.subheader("خرید و فروخت کے سگنلز")
+    coin = st.selectbox("سکہ منتخب کریں", ["BTC/USDT", "ETH/USDT"])
+    signal = np.random.choice(["🟢 Strong Buy", "🟡 Neutral", "🔴 Strong Sell"])
+    st.metric(label=f"{coin} سگنل", value=signal)
 
-def get_indicators(data): data['EMA20'] = data['Close'].ewm(span=20).mean() data['EMA50'] = data['Close'].ewm(span=50).mean() data['RSI'] = (100 - (100 / (1 + data['Close'].pct_change().rolling(window=14).mean()))) return data
-
-with col2: st.subheader("اشاریے اور سگنلز") if not df.empty: df = get_indicators(df) latest = df.iloc[-1] if latest['EMA20'] > latest['EMA50'] and latest['RSI'] < 70: st.success("خریدنے کا سگنل (BUY)") elif latest['EMA20'] < latest['EMA50'] and latest['RSI'] > 30: st.error("بیچنے کا سگنل (SELL)") else: st.info("انتظار کریں (WAIT)")
-
--------------------------- Pattern Detection --------------------------
-
-def detect_head_shoulders(df): return np.random.choice([True, False])
-
-def detect_triangle(df): return np.random.choice([True, False])
-
-st.subheader("چارٹ پیٹرن ڈیٹیکشن") colp1, colp2 = st.columns(2)
-
-with colp1: if detect_head_shoulders(df): st.success("Head & Shoulders پیٹرن ملا") else: st.info("Head & Shoulders نہیں ملا")
-
-with colp2: if detect_triangle(df): st.success("Triangle Pattern ملا") else: st.info("Triangle Pattern نہیں ملا")
-
--------------------------- Footer --------------------------
-
-st.markdown("""
-
-ساختہ: Urdu Trading Pro App | Indicators, Chart Patterns & AI Assistant """)
-
+# Exchange Toggle
+elif menu == "Exchange Toggle":
+    st.subheader("ایکسچینج سیلیکٹر")
+    exchanges = ["Binance", "Bybit", "CME", "Bitget", "KuCoin", "MEXC", "OKX"]
+    active = []
+    for ex in exchanges:
+        toggle = st.checkbox(f"{ex}", value=True)
+        if toggle:
+            active.append(ex)
+    st.success(f"چالو ایکسچینجز: {', '.join(active)}")
