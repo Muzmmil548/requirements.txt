@@ -1,54 +1,62 @@
-Urdu Trading Assistant App - Full Functional Version
+import streamlit as st
+import pandas as pd
+import yfinance as yf
+import numpy as np
+import plotly.graph_objs as go
+from binance.client import Client
+import requests
 
-This app includes: Live Chart, Exchange Toggle, Top 10/50 Coin Analyzer, Buy/Sell/Hold Signals,
+# Function to fetch live data from Binance
+def get_binance_data(symbol):
+    client = Client(api_key='your_api_key', api_secret='your_api_secret')
+    candles = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1MINUTE, limit=100)
+    data = pd.DataFrame(candles, columns=['Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number of Trades', 'Taker buy base asset volume', 'Taker buy quote asset volume', 'Ignore'])
+    data['Time'] = pd.to_datetime(data['Time'], unit='ms')
+    return data
 
-Chart Pattern Detection (15+ types), AI Assist Section, and Modern Layout
+# Streamlit app layout
+st.title('Urdu Trading Assistant App - Full Functional Version')
 
-import streamlit as st import pandas as pd import yfinance as yf import plotly.graph_objs as go import requests import datetime
+# Add option to select top coins (Top 10 or Top 50)
+coin_count = st.radio('Select Coin Count', ('Top 10', 'Top 50'))
 
-st.set_page_config(page_title="Urdu Scalping Checklist App", layout="wide") st.title("Urdu Trading AI Assistant")
+# Display selected coins based on AI assistant
+st.subheader(f"Selected {coin_count} Coins:")
+# You can replace this with real coin selection logic (using AI or your predefined list)
+selected_coins = ['BTC', 'ETH', 'XRP', 'LTC', 'ADA']  # Sample selection, replace with your logic
+for coin in selected_coins:
+    st.write(f"Coin: {coin}")
 
-Sidebar Layout
+# Function to plot live chart using Plotly
+def plot_live_chart(symbol):
+    data = get_binance_data(symbol)
+    fig = go.Figure(data=[go.Candlestick(x=data['Time'],
+                                         open=data['Open'],
+                                         high=data['High'],
+                                         low=data['Low'],
+                                         close=data['Close'])])
+    fig.update_layout(title=f'{symbol} Live Market Data', xaxis_title='Time', yaxis_title='Price')
+    st.plotly_chart(fig)
 
-st.sidebar.title("App Options")
+# Add chart for a selected coin
+coin_to_plot = st.selectbox('Select Coin for Live Chart', selected_coins)
+plot_live_chart(coin_to_plot)
 
-exchange_options = ["Binance", "Bybit", "CME", "Bitget", "KuCoin", "MEXC", "OKX"] enabled_exchanges = [ex for ex in exchange_options if st.sidebar.checkbox(ex, True)]
+# Add pattern detection and signals (basic example)
+st.subheader('Chart Patterns & Signals:')
+pattern = st.radio('Select Chart Pattern', ('Head & Shoulders', 'Triangle', 'Double Top/Bottom'))
+if pattern == 'Head & Shoulders':
+    st.markdown('🟢 Head & Shoulders detected - Buy Signal')
+elif pattern == 'Triangle':
+    st.markdown('🟡 Triangle pattern detected - Hold/Wait Signal')
+else:
+    st.markdown('🔴 Double Top/Bottom pattern detected - Sell Signal')
 
-top_list = st.sidebar.selectbox("Select Coins List", ["Top 10", "Top 50"])
+# Order Placement via Binance (example)
+st.subheader('Order Placement via Binance:')
+if st.button('Place Order'):
+    # Add Binance API order placement logic here (for demo, we are not placing real orders)
+    st.success('Order has been placed successfully (simulated).')
 
-Dummy coin list for demo
-
-top_10_coins = ["BTC-USD", "ETH-USD", "BNB-USD", "SOL-USD", "XRP-USD", "ADA-USD", "DOGE-USD", "DOT-USD", "AVAX-USD", "LINK-USD"] top_50_coins = top_10_coins + [f"COIN{i}-USD" for i in range(11, 51)]
-
-coin_list = top_10_coins if top_list == "Top 10" else top_50_coins
-
-selected_coin = st.selectbox("Select Coin to Analyze", coin_list)
-
-Download historical data
-
-@st.cache_data def get_data(symbol): data = yf.download(symbol, period="5d", interval="1h") return data
-
-data = get_data(selected_coin)
-
---- Live Chart ---
-
-st.subheader(f"Live Chart: {selected_coin}") fig = go.Figure() fig.add_trace(go.Candlestick(x=data.index, open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'])) st.plotly_chart(fig, use_container_width=True)
-
---- Signal Logic (simple moving average demo) ---
-
-data['SMA20'] = data['Close'].rolling(window=20).mean() data['SMA50'] = data['Close'].rolling(window=50).mean()
-
-latest = data.iloc[-1] signal = "" if latest['SMA20'] > latest['SMA50']: signal = "🟢 BUY" elif latest['SMA20'] < latest['SMA50']: signal = "🔴 SELL" else: signal = "🟡 HOLD"
-
-st.markdown(f"### Signal: {signal}")
-
---- Chart Pattern Detection (simulated for demo) ---
-
-patterns = [ "Head & Shoulders", "Inverse Head & Shoulders", "Double Top", "Double Bottom", "Triple Top", "Triple Bottom", "Ascending Triangle", "Descending Triangle", "Symmetrical Triangle", "Cup and Handle", "Rising Wedge", "Falling Wedge", "Bullish Rectangle", "Bearish Rectangle", "Broadening Formation", "Diamond Top/Bottom" ]
-
-st.markdown("### Detected Chart Patterns") cols = st.columns(4) import random for i, pattern in enumerate(patterns): detected = random.choice(["🟢", "🔴", "🟡"]) cols[i % 4].markdown(f"{pattern} {detected}")
-
---- Exchange Toggles Display ---
-
-st.sidebar.markdown("---") st.sidebar.markdown("### Enabled Exchanges") for ex in enabled_exchanges: st.sidebar.write(f"✅ {ex}")
-
+# Add footer
+st.markdown('### Powered by Urdu Trading Assistant')
