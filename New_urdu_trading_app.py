@@ -1,82 +1,28 @@
-import streamlit as st
-import pandas as pd
-import yfinance as yf
-import numpy as np
-import plotly.graph_objs as go
-import ccxt
-import requests
-from datetime import datetime, timedelta
+Urdu Trading Assistant App with TradingView and Exchange Chart Toggle
 
-st.set_page_config(layout="wide")
-st.title("اردو اسکیلپنگ چیک لسٹ ایپ | Urdu Trading Assistant")
+import streamlit as st import pandas as pd import yfinance as yf import numpy as np import plotly.graph_objs as go import ccxt import requests from datetime import datetime, timedelta
 
-# Sidebar navigation
-menu = st.sidebar.radio("اپشن منتخب کریں", (
-    "Live Chart", "Top 10 Coins", "Top 50 Coins",
-    "Chart Patterns", "Buy/Sell Signals", "Exchange Toggle"
-))
+st.set_page_config(layout="wide") st.title("Urdu Trading Assistant - Scalping Checklist App")
 
-# Load data function
-@st.cache_data
-def load_data(symbol, period='1d', interval='5m'):
-    data = yf.download(symbol, period=period, interval=interval)
-    data.reset_index(inplace=True)
-    return data
+Sidebar toggle for chart type
 
-# Live Chart section
-if menu == "Live Chart":
-    st.subheader("لائیو چارٹ")
-    symbol = st.text_input("سکہ کا سمبل درج کریں (جیسے BTC-USD)", "BTC-USD")
-    df = load_data(symbol)
-    fig = go.Figure(data=[go.Candlestick(
-        x=df['Datetime'],
-        open=df['Open'], high=df['High'],
-        low=df['Low'], close=df['Close']
-    )])
-    fig.update_layout(xaxis_rangeslider_visible=False)
-    st.plotly_chart(fig, use_container_width=True)
+chart_option = st.sidebar.radio("Select Chart Type:", ["TradingView Chart", "Exchange (Binance) Chart"])
 
-# Top 10 Coins with AI Signals
-elif menu == "Top 10 Coins":
-    st.subheader("ٹاپ 10 سکے - AI سگنلز")
-    top10 = ["BTC/USDT", "ETH/USDT", "BNB/USDT", "SOL/USDT", "XRP/USDT",
-             "ADA/USDT", "DOGE/USDT", "AVAX/USDT", "DOT/USDT", "MATIC/USDT"]
-    st.write("AI سگنلز: 🟢 Buy | 🟡 Hold | 🔴 Sell")
-    for coin in top10:
-        signal = np.random.choice(["🟢 Buy", "🟡 Hold", "🔴 Sell"])
-        st.write(f"{coin}: {signal}")
+Sidebar for coin selection
 
-# Top 50 Coins (Mock)
-elif menu == "Top 50 Coins":
-    st.subheader("ٹاپ 50 سکے (ڈیمو موڈ)")
-    for i in range(1, 51):
-        st.write(f"Coin {i}: 🟢 Buy")
+symbol = st.sidebar.selectbox("Select Coin:", ["BTC/USDT", "ETH/USDT", "BNB/USDT", "SOL/USDT"]) symbol_yf = symbol.replace("/", "") + "-USD"
 
-# Chart Patterns Section
-elif menu == "Chart Patterns":
-    st.subheader("چارٹ پیٹرن تجزیہ")
-    st.write("Head & Shoulders, Double Top/Bottom, Triangle, etc.")
-    for pattern in ["Head & Shoulders", "Double Bottom", "Ascending Triangle"]:
-        detected = np.random.choice([True, False])
-        if detected:
-            st.success(f"{pattern} پیٹرن ملا 🟢")
-        else:
-            st.warning(f"{pattern} پیٹرن نہیں ملا")
+st.markdown("---")
 
-# Buy/Sell Signals (demo)
-elif menu == "Buy/Sell Signals":
-    st.subheader("خرید و فروخت کے سگنلز")
-    coin = st.selectbox("سکہ منتخب کریں", ["BTC/USDT", "ETH/USDT"])
-    signal = np.random.choice(["🟢 Strong Buy", "🟡 Neutral", "🔴 Strong Sell"])
-    st.metric(label=f"{coin} سگنل", value=signal)
+if chart_option == "TradingView Chart": st.subheader(f"Live TradingView Chart - {symbol}") tradingview_symbol = symbol.replace("/USDT", "USDT").upper() tradingview_widget = f""" <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_3a0fc&symbol=BINANCE%3A{tradingview_symbol}&interval=1&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&hidevolume=0&hideideas=1&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget_new&utm_campaign=chart&utm_term=BINANCE%3ABTCUSDT" width="100%" height="500" frameborder="0" allowtransparency="true" scrolling="no"></iframe> """ st.components.v1.html(tradingview_widget, height=500)
 
-# Exchange Toggle
-elif menu == "Exchange Toggle":
-    st.subheader("ایکسچینج سیلیکٹر")
-    exchanges = ["Binance", "Bybit", "CME", "Bitget", "KuCoin", "MEXC", "OKX"]
-    active = []
-    for ex in exchanges:
-        toggle = st.checkbox(f"{ex}", value=True)
-        if toggle:
-            active.append(ex)
-    st.success(f"چالو ایکسچینجز: {', '.join(active)}")
+elif chart_option == "Exchange (Binance) Chart": st.subheader(f"Live Binance Chart (1m candles) - {symbol}") exchange = ccxt.binance() bars = exchange.fetch_ohlcv(symbol, timeframe='1m', limit=100) df = pd.DataFrame(bars, columns=['Time', 'Open', 'High', 'Low', 'Close', 'Volume']) df['Time'] = pd.to_datetime(df['Time'], unit='ms')
+
+fig = go.Figure(data=[go.Candlestick(x=df['Time'],
+            open=df['Open'], high=df['High'],
+            low=df['Low'], close=df['Close'])])
+fig.update_layout(xaxis_rangeslider_visible=False)
+st.plotly_chart(fig, use_container_width=True)
+
+st.markdown("---") st.success("Chart loaded successfully! Choose other options from the sidebar to explore more.")
+
