@@ -1,63 +1,90 @@
 # streamlit_app.py
 import streamlit as st
+import plotly.graph_objects as go
+import numpy as np
+import pandas as pd
 
-# Configure page
-st.set_page_config(
-    page_title="Crypto Scalping Checklist",
-    page_icon="✅",
-    layout="wide"
-)
+# کسٹم CSS سٹائلنگ
+st.markdown("""
+<style>
+    .stButton>button {
+        background: #2c3e50 !important;
+        color: white !important;
+        border-radius: 8px !important;
+    }
+    .stRadio>div>label {
+        font-weight: bold !important;
+    }
+    .stPlotlyChart {
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 15px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-# Sidebar Navigation
-with st.sidebar:
-    st.header("NAVIGATION")
-    page = st.radio("", ["Home", "Live", "Chart", "Top 50", "AI Signals"])
+# لائیو ڈیٹا جنریٹر
+def generate_live_data():
+    return pd.DataFrame({
+        'time': pd.date_range(start='now', periods=100, freq='s'),
+        'price': np.random.randn(100).cumsum() + 100
+    })
 
-# Main Content Area
-if page == "Home":
-    st.header("Crypto Scalping Dashboard")
+# کینڈل اسٹک چارٹ
+def plot_candlestick():
+    df = generate_live_data()
+    fig = go.Figure(data=[go.Candlestick(
+        x=df['time'],
+        open=df['price'].shift(1),
+        high=df['price'] + 2,
+        low=df['price'] - 2,
+        close=df['price']
+    )])
+    fig.update_layout(height=300, margin=dict(l=20, r=20, t=30, b=20))
+    return fig
+
+# مین پیج
+def main():
+    st.set_page_config(
+        page_title="Trading Dashboard",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
     
-    # Type Section
-    with st.container():
-        st.subheader("Type")
+    # سائیڈبار
+    with st.sidebar:
+        st.header("Navigation")
+        selected = st.radio("", ["Live Charts", "AI Signals", "Market Data"])
+    
+    # مرکزی علاقہ
+    if selected == "Live Charts":
+        st.header("Real-Time Trading Dashboard")
+        
+        # ٹاپ سیکشن (3 کالم)
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.button("Top S")
+            st.subheader("Top Assets")
+            st.write("BTC/USDT\nETH/USDT\nBNB/USDT")
+        
         with col2:
-            st.button("All AI Signals")
+            st.subheader("AI Signals")
+            st.write("Buy Signal: BTC\nSell Signal: ETH")
+        
         with col3:
-            st.button("Patterns")
-
-    # Coin Selector
-    st.subheader("Coin Selector")
-    st.write("Top 10 Coins")
+            st.subheader("Patterns")
+            st.write("Head & Shoulders\nDouble Top")
+        
+        # لائیو چارٹ
+        st.subheader("Live Price Chart")
+        st.plotly_chart(plot_candlestick(), use_container_width=True)
     
-    # AI Signals
-    st.subheader("AI Assistant Signals")
-    signal = st.radio("Actions:", ["Buy", "Hold", "Sell"])
+    elif selected == "AI Signals":
+        st.header("AI Trading Signals")
+        # AI سگنلز کا کوڈ یہاں شامل کریں
     
-    # Chart Patterns
-    st.subheader("Chart Patterns")
-    pattern_col1, pattern_col2, pattern_col3 = st.columns(3)
-    with pattern_col1:
-        st.button("Head & Shoulders")
-    with pattern_col2:
-        st.button("Triangle")
-    with pattern_col3:
-        st.button("Double Top")
+    elif selected == "Market Data":
+        st.header("Market Overview")
+        # مارکیٹ ڈیٹا کا کوڈ یہاں شامل کریں
 
-elif page == "Live":
-    st.header("Live Market Data")
-    # Add live data components here
-
-elif page == "Chart":
-    st.header("Technical Analysis Charts")
-    # Add chart components here
-
-elif page == "AI Signals":
-    st.header("AI Trading Signals")
-    # Add AI signal components here
-
-elif page == "Top 50":
-    st.header("Top 50 Cryptocurrencies")
-    # Add top coins list here
+if __name__ == "__main__":
+    main()
