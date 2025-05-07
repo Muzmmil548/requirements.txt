@@ -1,56 +1,34 @@
-# Urdu Trading Assistant App - Corrected
-
 import streamlit as st
-import pandas as pd
-import yfinance as yf
-import numpy as np
-import plotly.graph_objs as go
-from datetime import datetime, timedelta
+import datetime
 
-st.title("اردو ٹریڈنگ اسسٹنٹ")
+st.set_page_config(layout="centered")
 
-st.sidebar.header("ایکسچینج سلیکشن")
-use_tradingview = st.sidebar.checkbox("TradingView چارٹ استعمال کریں", value=True)
+# اردو ہیڈنگ
+st.markdown("<h1 style='text-align: center; font-size: 50px;'>اردو ٹریڈنگ اسسٹنٹ</h1>", unsafe_allow_html=True)
 
-st.sidebar.subheader("سکوں کا انتخاب کریں")
-coin_limit = st.sidebar.radio("Top Coins", ["Top 10", "Top 50"])
-coin_count = 10 if coin_limit == "Top 10" else 50
+# ٹریڈنگ ویو چارٹ embed کرنے والا فنکشن
+def show_chart(symbol):
+    st.subheader(f"{symbol}")
+    st.markdown(f"""
+        <iframe src="https://s.tradingview.com/embed-widget/mini-symbol-overview/?symbol=BINANCE:{symbol}&locale=ur" 
+        width="100%" height="200" frameborder="0"></iframe>
+    """, unsafe_allow_html=True)
+    
+    # سگنل باکس
+    st.markdown(
+        f"""
+        <div style="background-color:#fff3cd;padding:15px;border-radius:10px;">
+            <strong>Live چارٹ:</strong> براہ کرم {symbol} کیلئے سگنل دیکھیں۔
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.markdown("---")
 
-sample_coins = ["BTC/USD", "ETH/USD", "BNB/USD", "SOL/USD", "XRP/USD", "ADA/USD", "DOGE/USD", "AVAX/USD", "DOT/USD", "MATIC/USD"]
-coins = sample_coins[:coin_count]
+# کوائن لسٹ
+coins = ["BTC/USDT", "ETH/USDT", "BNB/USDT", "SOL/USDT"]
 
-def get_signal(data):
-    if data['Close'][-1] > data['Close'][-5:].mean():
-        return "🟢 Buy"
-    elif data['Close'][-1] < data['Close'][-5:].mean():
-        return "🔴 Sell"
-    else:
-        return "🟡 Hold"
-
+# ہر کوائن کا سیکشن
 for coin in coins:
-    st.markdown(f"### {coin}")
-    
-    # Fix symbol for Yahoo Finance
-    symbol = coin.replace("/", "-")  # BTC/USD → BTC-USD
-    data = yf.download(symbol, period="7d", interval="1h")
-
-    if data.empty:
-        st.warning(f"Data not available for {coin}")
-        continue
-
-    if use_tradingview:
-        fig = go.Figure()
-        fig.add_trace(go.Candlestick(
-            x=data.index,
-            open=data['Open'],
-            high=data['High'],
-            low=data['Low'],
-            close=data['Close']
-        ))
-        fig.update_layout(title=f"{coin} Chart", xaxis_title="Time", yaxis_title="Price")
-        st.plotly_chart(fig, use_container_width=True)
-    
-    signal = get_signal(data)
-    st.markdown(f"**Signal:** {signal}")
-
-st.success("ایپ مکمل طور پر درست طریقے سے چل رہی ہے۔")
+    symbol = coin.replace("/", "")
+    show_chart(symbol)
