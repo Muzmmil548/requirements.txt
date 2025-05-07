@@ -4,8 +4,8 @@ import yfinance as yf
 import numpy as np
 import plotly.graph_objs as go
 import ccxt
-import requests from datetime
-import datetime, timedelta
+import requests
+from datetime import datetime, timedelta
 
 st.set_page_config(page_title="Urdu Trading Assistant", layout="wide")
 
