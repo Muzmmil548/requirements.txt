@@ -1,46 +1,90 @@
-import streamlit as st import pandas as pd import yfinance as yf import numpy as np import plotly.graph_objs as go
+import streamlit as st
+import pandas as pd
+import yfinance as yf
+import numpy as np
+import plotly.graph_objs as go
 
---- App Title ---
+# Title
+st.set_page_config(layout="wide")
+st.title("AI-Based Urdu Trading Assistant (Top 10/50 Coins, Live Signals, Chart Patterns)")
 
-st.set_page_config(page_title="Urdu Trading AI Assistant", layout="wide") st.title("Urdu Trading AI Assistant with Pattern Detection and Signals")
+# Sidebar: User options
+st.sidebar.header("Settings")
+symbol = st.sidebar.text_input("Enter Symbol (e.g., BTC-USD, ETH-USD):", value="BTC-USD")
+top_selection = st.sidebar.selectbox("Top Coins to Scan:", ["Top 10", "Top 50"])
+timeframe = st.sidebar.selectbox("Select Timeframe:", ["1d", "1h", "15m", "5m", "1m"])
+start_date = st.sidebar.date_input("Start Date", pd.to_datetime("2024-01-01"))
 
---- Sidebar Coin Selection ---
+# Load data
+@st.cache_data(ttl=3600)
+def get_data(symbol, start):
+    df = yf.download(symbol, start=start)
+    return df
 
-option = st.sidebar.selectbox("Select Coin Group:", ("Top 10", "Top 50"))
+df = get_data(symbol, start_date)
 
-if option == "Top 10": coins = ["BTC-USD", "ETH-USD", "BNB-USD", "XRP-USD", "SOL-USD", "ADA-USD", "DOGE-USD", "AVAX-USD", "DOT-USD", "TRX-USD"] elif option == "Top 50": coins = ["BTC-USD", "ETH-USD", "BNB-USD", "XRP-USD", "SOL-USD", "ADA-USD", "DOGE-USD", "AVAX-USD", "DOT-USD", "TRX-USD", "MATIC-USD", "LINK-USD", "LTC-USD", "SHIB-USD", "ATOM-USD", "ETC-USD", "XMR-USD", "XLM-USD", "FIL-USD", "ICP-USD"]
+if df.empty:
+    st.warning("No data found. Please check the symbol.")
+    st.stop()
 
-selected_coin = st.sidebar.selectbox("Select Coin:", coins) data = yf.download(selected_coin, period="7d", interval="1h")
+# EMA and RSI
+df["EMA20"] = df["Close"].ewm(span=20).mean()
+df["EMA50"] = df["Close"].ewm(span=50).mean()
+delta = df["Close"].diff()
+gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+rs = gain / loss
+df["RSI"] = 100 - (100 / (1 + rs))
 
---- Indicators Calculation ---
+# Signal logic
+latest_rsi = df["RSI"].iloc[-1]
+if latest_rsi > 70:
+    signal = "Sell"
+    color = "🔴"
+elif latest_rsi < 30:
+    signal = "Buy"
+    color = "🟢"
+else:
+    signal = "Wait"
+    color = "🟡"
 
-def calculate_indicators(df): df['RSI'] = compute_rsi(df['Close'], 14) df['EMA20'] = df['Close'].ewm(span=20).mean() df['EMA50'] = df['Close'].ewm(span=50).mean() return df
+# Chart
+st.subheader(f"{symbol} Price Chart with EMA & RSI")
 
-def compute_rsi(series, period=14): delta = series.diff() gain = (delta.where(delta > 0, 0)).rolling(window=period).mean() loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean() rs = gain / loss return 100 - (100 / (1 + rs))
+fig = go.Figure()
 
-data = calculate_indicators(data)
+fig.add_trace(go.Candlestick(
+    x=df.index,
+    open=df['Open'],
+    high=df['High'],
+    low=df['Low'],
+    close=df['Close'],
+    name='Candlesticks'))
 
---- Signal Logic ---
+fig.add_trace(go.Scatter(x=df.index, y=df["EMA20"], line=dict(color='blue', width=1), name="EMA20"))
+fig.add_trace(go.Scatter(x=df.index, y=df["EMA50"], line=dict(color='orange', width=1), name="EMA50"))
 
-def signal_logic(rsi): if rsi < 30: return ("Buy", "🟢") elif rsi > 70: return ("Sell", "🔴") else: return ("Wait", "🟡")
+fig.update_layout(xaxis_rangeslider_visible=False, height=600)
 
-last_rsi = data['RSI'].iloc[-1] signal, color = signal_logic(last_rsi)
+st.plotly_chart(fig, use_container_width=True)
 
---- Live Chart ---
+# RSI & Traffic Signal
+st.subheader("Indicators & Signal")
+st.metric("RSI", f"{latest_rsi:.2f}")
+st.write(f"**Traffic Signal**: {color} **{signal}** (based on RSI)")
 
-st.subheader(f"Live Chart: {selected_coin}") fig = go.Figure() fig.add_trace(go.Candlestick(x=data.index, open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'], name='Candlesticks')) fig.add_trace(go.Scatter(x=data.index, y=data['EMA20'], line=dict(color='blue', width=1), name='EMA20')) fig.add_trace(go.Scatter(x=data.index, y=data['EMA50'], line=dict(color='orange', width=1), name='EMA50')) fig.update_layout(xaxis_rangeslider_visible=False, height=500) st.plotly_chart(fig, use_container_width=True)
+# Chart Pattern Detection Section
+st.subheader("Chart Pattern Detection (Coming Soon)")
+pattern_placeholders = [
+    "1. Head & Shoulders",
+    "2. Inverse Head & Shoulders",
+    "3. Triangle",
+    "4. Double Top",
+    "5. Double Bottom",
+    "6. Flag / Pennant",
+    "7. Rising Wedge",
+    "8. Falling Wedge"
+]
 
---- Signal Display ---
-
-st.markdown(f"### Signal: {signal} {color}") st.markdown(f"RSI: {last_rsi:.2f}")
-
---- Pattern Detection (Mocked for Now) ---
-
-pattern_dict = { "Head & Shoulders": "🟢", "Triangle": "🟢", "Double Top/Bottom": "🟢", "Flag/Pennant": "🟢", "Cup and Handle": "🟢", "Ascending Triangle": "🟢", "Descending Triangle": "🟢", "Symmetrical Triangle": "🟢", "Rising Wedge": "🟢", "Falling Wedge": "🟢", "Bullish Rectangle": "🟢", "Bearish Rectangle": "🟢", "Double Top": "🟢", "Double Bottom": "🟢", "Triple Top": "🟢", "Triple Bottom": "🟢", "Inverse Head & Shoulders": "🟢", "Broadening Formation": "🟢", "Diamond Top/Bottom": "🟢" }
-
-st.markdown("### Detected Patterns") for pattern, symbol in pattern_dict.items(): st.markdown(f"- {pattern} {symbol}")
-
---- Binance Future Feature Placeholder ---
-
-st.sidebar.markdown("---") st.sidebar.markdown("[Future Option] Connect Binance for Live Trade & Order Placement") st.sidebar.markdown("This will require your API Key and Secret in a secure place.")
-
+for pattern in pattern_placeholders:
+    st.write(f"{pattern} — [🟢 Detected] or [🔴 Not Detected] (AI logic coming soon)")
