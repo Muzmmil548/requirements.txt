@@ -1,9 +1,12 @@
-streamlit
-pandas
-yfinance
-numpy
-plotly
-python-binance
-ccxt
-cryptography
-requests
+from setuptools import setup
+
+setup(
+    name="urdu_scalping_app",
+    version="0.2",
+    install_requires=[
+        "arabic-reshaper",
+        "python-bidi"
+    ],
+    author="آپ کا نام",
+    description="مکمل اردو سپورٹ کے ساتھ Tkinter ایپ",
+)
