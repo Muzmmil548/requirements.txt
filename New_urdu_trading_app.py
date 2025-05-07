@@ -1,90 +1,122 @@
 # streamlit_app.py
 import streamlit as st
 import plotly.graph_objects as go
-import numpy as np
 import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
 
-# کسٹم CSS سٹائلنگ
+# ========== Page Configuration ========== #
+st.set_page_config(
+    page_title="Trading Dashboard",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ========== Custom Styling ========== #
 st.markdown("""
 <style>
+    /* Main container */
+    .main {background: #f5f6fa}
+    
+    /* Header styling */
+    h1 {color: #2c3e50; border-bottom: 2px solid #3498db}
+    
+    /* Buttons */
     .stButton>button {
-        background: #2c3e50 !important;
-        color: white !important;
-        border-radius: 8px !important;
+        background: #3498db !important;
+        border-radius: 8px;
+        padding: 10px 24px;
     }
-    .stRadio>div>label {
-        font-weight: bold !important;
-    }
-    .stPlotlyChart {
-        border: 1px solid #e0e0e0;
+    
+    /* Columns spacing */
+    .stColumn {padding: 15px}
+    
+    /* Live chart box */
+    .chart-box {
+        border: 1px solid #dfe6e9;
         border-radius: 12px;
-        padding: 15px;
+        padding: 20px;
+        margin-top: 20px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# لائیو ڈیٹا جنریٹر
+# ========== Live Data Generator ========== #
 def generate_live_data():
+    now = datetime.now()
     return pd.DataFrame({
-        'time': pd.date_range(start='now', periods=100, freq='s'),
-        'price': np.random.randn(100).cumsum() + 100
+        'timestamp': [now - timedelta(seconds=i) for i in range(100)],
+        'price': np.random.normal(100, 2, 100).cumsum()
     })
 
-# کینڈل اسٹک چارٹ
-def plot_candlestick():
+# ========== Chart Components ========== #
+def create_candlestick():
     df = generate_live_data()
-    fig = go.Figure(data=[go.Candlestick(
-        x=df['time'],
+    fig = go.Figure(go.Candlestick(
+        x=df['timestamp'],
         open=df['price'].shift(1),
-        high=df['price'] + 2,
-        low=df['price'] - 2,
+        high=df['price'] + 1.5,
+        low=df['price'] - 1.5,
         close=df['price']
-    )])
-    fig.update_layout(height=300, margin=dict(l=20, r=20, t=30, b=20))
+    ))
+    fig.update_layout(height=400, margin=dict(l=20, r=20, t=40, b=20))
     return fig
 
-# مین پیج
+# ========== Main App ========== #
 def main():
-    st.set_page_config(
-        page_title="Trading Dashboard",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
-    
-    # سائیڈبار
+    # Sidebar Navigation
     with st.sidebar:
-        st.header("Navigation")
-        selected = st.radio("", ["Live Charts", "AI Signals", "Market Data"])
+        st.header("TRADING SUITE")
+        menu = st.radio("", ["Live Dashboard", "AI Signals", "Market Scanner"])
     
-    # مرکزی علاقہ
-    if selected == "Live Charts":
-        st.header("Real-Time Trading Dashboard")
+    # Live Dashboard (Main Page)
+    if menu == "Live Dashboard":
+        # Header
+        st.header("CRYPTO SCALPING CHECKLIST", anchor=False)
         
-        # ٹاپ سیکشن (3 کالم)
+        # Top Section (3 Columns)
         col1, col2, col3 = st.columns(3)
+        
         with col1:
             st.subheader("Top Assets")
-            st.write("BTC/USDT\nETH/USDT\nBNB/USDT")
+            st.write("""
+            - BTC/USDT  
+            - ETH/USDT  
+            - BNB/USDT  
+            - XRP/USDT  
+            """)
         
         with col2:
             st.subheader("AI Signals")
-            st.write("Buy Signal: BTC\nSell Signal: ETH")
+            st.write("""
+            🟢 STRONG BUY: BTC  
+            🔴 SELL ALERT: ETH  
+            🟡 HOLD: BNB  
+            """)
         
         with col3:
             st.subheader("Patterns")
-            st.write("Head & Shoulders\nDouble Top")
+            st.write("""
+            - Head & Shoulders  
+            - Double Top  
+            - Triangle  
+            - Wedge  
+            """)
         
-        # لائیو چارٹ
-        st.subheader("Live Price Chart")
-        st.plotly_chart(plot_candlestick(), use_container_width=True)
+        # Live Chart Section
+        st.subheader("Live Price Action")
+        with st.container():
+            st.plotly_chart(create_candlestick(), use_container_width=True)
     
-    elif selected == "AI Signals":
+    # Other Pages
+    elif menu == "AI Signals":
         st.header("AI Trading Signals")
-        # AI سگنلز کا کوڈ یہاں شامل کریں
+        # Add AI components here
     
-    elif selected == "Market Data":
-        st.header("Market Overview")
-        # مارکیٹ ڈیٹا کا کوڈ یہاں شامل کریں
+    elif menu == "Market Scanner":
+        st.header("Market Scanner")
+        # Add scanner components here
 
 if __name__ == "__main__":
     main()
