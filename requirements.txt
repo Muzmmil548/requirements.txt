@@ -1,6 +1,7 @@
 streamlit
-yfinance
 pandas
+yfinance
 numpy
 plotly
+binance
 requests
