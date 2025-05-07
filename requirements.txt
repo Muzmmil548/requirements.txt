@@ -3,5 +3,7 @@ pandas
 yfinance
 numpy
 plotly
-binance
+python-binance
+ccxt
+cryptography
 requests
