@@ -1,68 +1,63 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
+# streamlit_app.py
+import streamlit as st
 
-class UrduScalpingApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("اردو اسکیلپنگ چیک لسٹ ایپ")
-        self.root.geometry("600x700")
-        self.root.configure(bg="#f0f2f5")
-        
-        # RTL سپورٹ کے لیے فونٹ سیٹنگ
-        self.font = ('Nafees Nastaleeq', 14)
-        
-        # نیویگیشن بار
-        self.create_navbar()
-        
-        # تمام سیکشنز بنائیں
-        self.create_sections()
+# Configure page
+st.set_page_config(
+    page_title="Crypto Scalping Checklist",
+    page_icon="✅",
+    layout="wide"
+)
 
-    def create_navbar(self):
-        navbar_frame = tk.Frame(self.root, bg="#1a73e8", height=50)
-        navbar_frame.pack(fill="x", padx=10, pady=10)
-        
-        nav_items = ["ہوم", "لائیو", "چارٹ", "ٹاپ 50", "AI سگنلز"]
-        for item in nav_items:
-            btn = tk.Button(navbar_frame, text=item, font=self.font, 
-                           bg="#1a73e8", fg="white", relief="flat")
-            btn.pack(side="right", padx=10)
+# Sidebar Navigation
+with st.sidebar:
+    st.header("NAVIGATION")
+    page = st.radio("", ["Home", "Live", "Chart", "Top 50", "AI Signals"])
 
-    def create_section(self, parent, title, buttons):
-        frame = tk.Frame(parent, bg="white", padx=20, pady=20)
-        frame.pack(fill="x", padx=10, pady=5)
-        
-        # عنوان
-        title_label = tk.Label(frame, text=title, font=self.font, 
-                              bg="white", justify="right")
-        title_label.pack(anchor="e")
-        
-        # بٹنز
-        btn_frame = tk.Frame(frame, bg="white")
-        btn_frame.pack(fill="x", pady=10)
-        
-        for btn_text in reversed(buttons):
-            btn = tk.Button(btn_frame, text=btn_text, font=self.font,
-                          bg="#1a73e8", fg="white", command=lambda t=btn_text: self.button_click(t))
-            btn.pack(side="right", padx=5)
+# Main Content Area
+if page == "Home":
+    st.header("Crypto Scalping Dashboard")
+    
+    # Type Section
+    with st.container():
+        st.subheader("Type")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.button("Top S")
+        with col2:
+            st.button("All AI Signals")
+        with col3:
+            st.button("Patterns")
 
-    def create_sections(self):
-        sections = [
-            ("ٹائپ", ["ٹاپ s", "AI Signass", "تمام AI سگنلز", "پیٹرنز"]),
-            ("کوین سلیکٹر", ["ٹاپ 10"]),
-            ("AI اسسٹنٹ سگنلز", ["خریدیں", "رکھیں", "فروخت کریں"]),
-            ("چارٹ پیٹرنز", ["ہیڈ اینڈ شولڈرز", "ٹرائی اینگل", "ڈبل ٹاپ"])
-        ]
-        
-        main_frame = tk.Frame(self.root, bg="#f0f2f5")
-        main_frame.pack(fill="both", expand=True)
-        
-        for title, buttons in sections:
-            self.create_section(main_frame, title, buttons)
+    # Coin Selector
+    st.subheader("Coin Selector")
+    st.write("Top 10 Coins")
+    
+    # AI Signals
+    st.subheader("AI Assistant Signals")
+    signal = st.radio("Actions:", ["Buy", "Hold", "Sell"])
+    
+    # Chart Patterns
+    st.subheader("Chart Patterns")
+    pattern_col1, pattern_col2, pattern_col3 = st.columns(3)
+    with pattern_col1:
+        st.button("Head & Shoulders")
+    with pattern_col2:
+        st.button("Triangle")
+    with pattern_col3:
+        st.button("Double Top")
 
-    def button_click(self, text):
-        messagebox.showinfo("اختیار", f"منتخب ہوا: {text}")
+elif page == "Live":
+    st.header("Live Market Data")
+    # Add live data components here
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = UrduScalpingApp(root)
-    root.mainloop()
+elif page == "Chart":
+    st.header("Technical Analysis Charts")
+    # Add chart components here
+
+elif page == "AI Signals":
+    st.header("AI Trading Signals")
+    # Add AI signal components here
+
+elif page == "Top 50":
+    st.header("Top 50 Cryptocurrencies")
+    # Add top coins list here
