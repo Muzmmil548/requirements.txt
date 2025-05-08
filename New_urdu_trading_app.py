@@ -1,122 +1,130 @@
-# streamlit_app.py
+# app.py
 import streamlit as st
-import plotly.graph_objects as go
+import requests
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 
-# ========== Page Configuration ========== #
+# ================== پیج کنفیگریشن ================== #
 st.set_page_config(
-    page_title="Trading Dashboard",
-    page_icon="📊",
+    page_title="Urdu Trading App",
+    page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ========== Custom Styling ========== #
+# ================== کسٹم CSS ================== #
 st.markdown("""
 <style>
-    /* Main container */
-    .main {background: #f5f6fa}
-    
-    /* Header styling */
-    h1 {color: #2c3e50; border-bottom: 2px solid #3498db}
-    
-    /* Buttons */
-    .stButton>button {
-        background: #3498db !important;
-        border-radius: 8px;
-        padding: 10px 24px;
+    /* سائیڈبار سٹائلنگ */
+    [data-testid="stSidebar"] {
+        background: #2c3e50 !important;
+        color: white !important;
     }
     
-    /* Columns spacing */
-    .stColumn {padding: 15px}
-    
-    /* Live chart box */
-    .chart-box {
-        border: 1px solid #dfe6e9;
-        border-radius: 12px;
-        padding: 20px;
-        margin-top: 20px;
+    /* قیمتیں باکس */
+    .price-box {
+        border: 2px solid #3498db;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 10px;
+        text-align: center;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ========== Live Data Generator ========== #
-def generate_live_data():
-    now = datetime.now()
-    return pd.DataFrame({
-        'timestamp': [now - timedelta(seconds=i) for i in range(100)],
-        'price': np.random.normal(100, 2, 100).cumsum()
-    })
+# ================== کوین گیکو API فنکشنز ================== #
+@st.cache_data(ttl=30) # ہر 30 سیکنڈ میں ڈیٹا اپڈیٹ
+def get_crypto_prices():
+    coins = {
+        'bitcoin': 'BTC/USDT',
+        'ethereum': 'ETH/USDT', 
+        'binancecoin': 'BNB/USDT'
+    }
+    prices = {}
+    for coin_id, pair in coins.items():
+        try:
+            response = requests.get(f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd")
+            prices[pair] = response.json()[coin_id]['usd']
+        except:
+            prices[pair] = "N/A"
+    return prices
 
-# ========== Chart Components ========== #
-def create_candlestick():
-    df = generate_live_data()
-    fig = go.Figure(go.Candlestick(
-        x=df['timestamp'],
-        open=df['price'].shift(1),
-        high=df['price'] + 1.5,
-        low=df['price'] - 1.5,
-        close=df['price']
-    ))
-    fig.update_layout(height=400, margin=dict(l=20, r=20, t=40, b=20))
-    return fig
+# ================== ٹریڈنگ ویو ویجٹ ================== #
+def tradingview_widget():
+    return f"""
+    <div class="tradingview-widget-container" style="height:600px; margin:20px">
+        <div id="tradingview_chart"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+        <script type="text/javascript">
+            new TradingView.widget({{
+                "autosize": true,
+                "symbol": "BINANCE:BTCUSDT",
+                "interval": "15",
+                "timezone": "Asia/Karachi",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "toolbar_bg": "#2c3e50",
+                "enable_publishing": false,
+                "hide_side_toolbar": false,
+                "allow_symbol_change": true,
+                "container_id": "tradingview_chart"
+            }});
+        </script>
+    </div>
+    """
 
-# ========== Main App ========== #
-def main():
-    # Sidebar Navigation
-    with st.sidebar:
-        st.header("TRADING SUITE")
-        menu = st.radio("", ["Live Dashboard", "AI Signals", "Market Scanner"])
-    
-    # Live Dashboard (Main Page)
-    if menu == "Live Dashboard":
-        # Header
-        st.header("CRYPTO SCALPING CHECKLIST", anchor=False)
-        
-        # Top Section (3 Columns)
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.subheader("Top Assets")
-            st.write("""
-            - BTC/USDT  
-            - ETH/USDT  
-            - BNB/USDT  
-            - XRP/USDT  
-            """)
-        
-        with col2:
-            st.subheader("AI Signals")
-            st.write("""
-            🟢 STRONG BUY: BTC  
-            🔴 SELL ALERT: ETH  
-            🟡 HOLD: BNB  
-            """)
-        
-        with col3:
-            st.subheader("Patterns")
-            st.write("""
-            - Head & Shoulders  
-            - Double Top  
-            - Triangle  
-            - Wedge  
-            """)
-        
-        # Live Chart Section
-        st.subheader("Live Price Action")
-        with st.container():
-            st.plotly_chart(create_candlestick(), use_container_width=True)
-    
-    # Other Pages
-    elif menu == "AI Signals":
-        st.header("AI Trading Signals")
-        # Add AI components here
-    
-    elif menu == "Market Scanner":
-        st.header("Market Scanner")
-        # Add scanner components here
+# ================== مین ایپ ================== #
+with st.sidebar:
+    st.header("مینو")
+    menu = st.radio("", ["ہوم", "لائیو", "چارٹ", "ٹاپ 50", "AI سگنلز"])
 
-if __name__ == "__main__":
-    main()
+if menu == "ہوم":
+    st.header("کرپٹو ٹریڈنگ ڈیش بورڈ")
+    
+    # ٹاپ سیکشن
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.subheader("ٹاپ کوائنز")
+        st.write("BTC/USDT\nETH/USDT\nBNB/USDT")
+    
+    # AI سگنلز
+    with col2:
+        st.subheader("AI تجاویز")
+        st.button("خریدیں")
+        st.button("فروخت کریں")
+    
+    # پیٹرنز
+    with col3:
+        st.subheader("چارٹ پیٹرنز")
+        st.write("ہیڈ اینڈ شولڈرز\nڈبل ٹاپ")
+
+elif menu == "لائیو":
+    st.header("لائیو مارکیٹ ڈیٹا")
+    
+    # ٹریڈنگ ویو چارٹ
+    st.markdown(tradingview_widget(), unsafe_allow_html=True)
+    
+    # لائیو قیمتیں
+    st.subheader("موجودہ قیمتیں")
+    prices = get_crypto_prices()
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"<div class='price-box'><h3>BTC/USDT</h3><h2>${prices['BTC/USDT']}</h2></div>", 
+                    unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"<div class='price-box'><h3>ETH/USDT</h3><h2>${prices['ETH/USDT']}</h2></div>", 
+                    unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"<div class='price-box'><h3>BNB/USDT</h3><h2>${prices['BNB/USDT']}</h2></div>", 
+                    unsafe_allow_html=True)
+
+# ================== انسٹالیشن فائل ================== #
+''' requirements.txt
+streamlit==1.32.0
+pandas==2.1.4
+requests==2.31.0
+'''
