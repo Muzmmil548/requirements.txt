@@ -1,130 +1,143 @@
 # app.py
 import streamlit as st
 import requests
-import pandas as pd
-from datetime import datetime
 
-# ================== پیج کنفیگریشن ================== #
+# ========== پیج کنفیگریشن ========== #
 st.set_page_config(
-    page_title="Urdu Trading App",
-    page_icon="📈",
+    page_title="پیشہ ور ٹریڈنگ ایپ",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    page_icon="💹"
 )
 
-# ================== کسٹم CSS ================== #
+# ========== کسٹم CSS ========== #
 st.markdown("""
 <style>
-    /* سائیڈبار سٹائلنگ */
-    [data-testid="stSidebar"] {
-        background: #2c3e50 !important;
-        color: white !important;
-    }
+    /* بنیادی سٹائلز */
+    .main {background: #1a1a1a !important; color: #ffffff}
+    
+    /* ہیڈرز */
+    h1 {color: #00ff88 !important; border-bottom: 3px solid #00ff88; padding-bottom: 10px}
     
     /* قیمتیں باکس */
-    .price-box {
-        border: 2px solid #3498db;
-        border-radius: 10px;
-        padding: 15px;
-        margin: 10px;
-        text-align: center;
+    .price-card {
+        background: #2d2d2d;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    
+    /* بٹنز */
+    .stButton>button {
+        background: #00ff88 !important;
+        color: #1a1a1a !important;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    .stButton>button:hover {transform: scale(1.05)}
+    
+    /* ٹریڈنگ ویو کنٹینر */
+    .tv-container {
+        height: 600px;
+        border-radius: 15px;
+        overflow: hidden;
+        margin: 25px 0;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.4);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ================== کوین گیکو API فنکشنز ================== #
-@st.cache_data(ttl=30) # ہر 30 سیکنڈ میں ڈیٹا اپڈیٹ
-def get_crypto_prices():
+# ========== کوین گیکو API ========== #
+@st.cache_data(ttl=15)
+def get_prices():
     coins = {
         'bitcoin': 'BTC/USDT',
-        'ethereum': 'ETH/USDT', 
+        'ethereum': 'ETH/USDT',
         'binancecoin': 'BNB/USDT'
     }
     prices = {}
     for coin_id, pair in coins.items():
         try:
             response = requests.get(f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd")
-            prices[pair] = response.json()[coin_id]['usd']
+            prices[pair] = "{:,.2f}".format(response.json()[coin_id]['usd'])
         except:
             prices[pair] = "N/A"
     return prices
 
-# ================== ٹریڈنگ ویو ویجٹ ================== #
-def tradingview_widget():
-    return f"""
-    <div class="tradingview-widget-container" style="height:600px; margin:20px">
-        <div id="tradingview_chart"></div>
+# ========== ٹریڈنگ ویو ویجٹ ========== #
+def tradingview_chart():
+    return """
+    <div class="tv-container">
         <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-        <script type="text/javascript">
-            new TradingView.widget({{
-                "autosize": true,
-                "symbol": "BINANCE:BTCUSDT",
-                "interval": "15",
-                "timezone": "Asia/Karachi",
-                "theme": "dark",
-                "style": "1",
-                "locale": "en",
-                "toolbar_bg": "#2c3e50",
-                "enable_publishing": false,
-                "hide_side_toolbar": false,
-                "allow_symbol_change": true,
-                "container_id": "tradingview_chart"
-            }});
+        <div id="tradingview_chart"></div>
+        <script>
+        new TradingView.widget({
+            "autosize": true,
+            "symbol": "BINANCE:BTCUSDT",
+            "interval": "15",
+            "timezone": "Asia/Karachi",
+            "theme": "dark",
+            "style": "1",
+            "locale": "en",
+            "toolbar_bg": "#1a1a1a",
+            "enable_publishing": false,
+            "hide_side_toolbar": false,
+            "allow_symbol_change": true,
+            "container_id": "tradingview_chart"
+        });
         </script>
     </div>
     """
 
-# ================== مین ایپ ================== #
+# ========== مین لیآؤٹ ========== #
+# سائیڈبار
 with st.sidebar:
-    st.header("مینو")
-    menu = st.radio("", ["ہوم", "لائیو", "چارٹ", "ٹاپ 50", "AI سگنلز"])
+    st.markdown("<h1 style='color: #00ff88 !important'>مینو</h1>", unsafe_allow_html=True)
+    menu = st.radio("", ["ہوم", "لائیو چارٹ", "سگنلز", "اکاؤنٹ"])
 
+# مرکزی علاقہ
 if menu == "ہوم":
-    st.header("کرپٹو ٹریڈنگ ڈیش بورڈ")
+    st.markdown("<h1>پیشہ ور ٹریڈنگ پلیٹ فارم</h1>", unsafe_allow_html=True)
     
-    # ٹاپ سیکشن
+    # قیمتیں کارڈز
+    prices = get_prices()
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.subheader("ٹاپ کوائنز")
-        st.write("BTC/USDT\nETH/USDT\nBNB/USDT")
+        st.markdown(f"""
+        <div class="price-card">
+            <h3>🔴 BTC/USDT</h3>
+            <h1 style='color: #00ff88'>${prices['BTC/USDT']}</h1>
+        </div>
+        """, unsafe_allow_html=True)
     
-    # AI سگنلز
     with col2:
-        st.subheader("AI تجاویز")
-        st.button("خریدیں")
-        st.button("فروخت کریں")
+        st.markdown(f"""
+        <div class="price-card">
+            <h3>🔵 ETH/USDT</h3>
+            <h1 style='color: #00ff88'>${prices['ETH/USDT']}</h1>
+        </div>
+        """, unsafe_allow_html=True)
     
-    # پیٹرنز
     with col3:
-        st.subheader("چارٹ پیٹرنز")
-        st.write("ہیڈ اینڈ شولڈرز\nڈبل ٹاپ")
+        st.markdown(f"""
+        <div class="price-card">
+            <h3>🟢 BNB/USDT</h3>
+            <h1 style='color: #00ff88'>${prices['BNB/USDT']}</h1>
+        </div>
+        """, unsafe_allow_html=True)
 
-elif menu == "لائیو":
-    st.header("لائیو مارکیٹ ڈیٹا")
-    
-    # ٹریڈنگ ویو چارٹ
-    st.markdown(tradingview_widget(), unsafe_allow_html=True)
-    
-    # لائیو قیمتیں
-    st.subheader("موجودہ قیمتیں")
-    prices = get_crypto_prices()
-    
-    col1, col2, col3 = st.columns(3)
+elif menu == "لائیو چارٹ":
+    st.markdown("<h1>لائیو ٹریڈنگ چارٹ</h1>", unsafe_allow_html=True)
+    st.markdown(tradingview_chart(), unsafe_allow_html=True)
+
+elif menu == "سگنلز":
+    st.markdown("<h1>AI ٹریڈنگ سگنلز</h1>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
     with col1:
-        st.markdown(f"<div class='price-box'><h3>BTC/USDT</h3><h2>${prices['BTC/USDT']}</h2></div>", 
-                    unsafe_allow_html=True)
-    
+        st.button("🔥 فوری خریداری", help="مضبوط خریداری کا سگنل")
+        st.button("🛑 فوری فروخت", help="ہنگامی فروخت کا الارم")
     with col2:
-        st.markdown(f"<div class='price-box'><h3>ETH/USDT</h3><h2>${prices['ETH/USDT']}</h2></div>", 
-                    unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown(f"<div class='price-box'><h3>BNB/USDT</h3><h2>${prices['BNB/USDT']}</h2></div>", 
-                    unsafe_allow_html=True)
-
-# ================== انسٹالیشن فائل ================== #
-''' requirements.txt
-streamlit==1.32.0
-pandas==2.1.4
-requests==2.31.0
-'''
+        st.button("📈 طویل مدتی", help="طویل مدتی ہولڈ")
+        st.button("⚠️ خطرے کا الارم", help="مارکیٹ میں اتار چڑھاؤ")
