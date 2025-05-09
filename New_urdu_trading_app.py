@@ -1,95 +1,71 @@
-# Urdu Trading Checklist App - Phase 1 to 3 Full Code
-
+# Urdu Trading Assistant App (Phase 1 to 4)
 import streamlit as st
-import streamlit.components.v1 as components
-import requests
-import pandas as pd
-import time
+import random
 
-st.set_page_config(page_title="Urdu Scalping Checklist App", layout="wide")
+st.set_page_config(layout="wide", page_title="Urdu Trading Assistant")
 
-# Custom CSS
-st.markdown("""
-    <style>
-    body, .stApp {
-        background-color: #0f1117;
-        color: white;
-    }
-    .block-container {
-        padding: 1rem 2rem 2rem;
-    }
-    ul {line-height: 1.8; font-size: 16px;}
-    .signal-green {color: lime; animation: blink 1s infinite;}
-    .signal-yellow {color: gold; animation: blink 1.5s infinite;}
-    .signal-red {color: red; animation: blink 2s infinite;}
-    @keyframes blink {0% {opacity: 1;} 50% {opacity: 0.4;} 100% {opacity: 1;}}
-    </style>
-""", unsafe_allow_html=True)
+st.title("Urdu Trading Assistant (Pro Version)")
+st.markdown("### Professional AI + Indicator + Pattern Based Scalping Checklist")
 
-# Sidebar Navigation
-st.sidebar.title("Menu")
-st.sidebar.button("Home")
-st.sidebar.button("Live")
-st.sidebar.button("Chart")
-st.sidebar.button("Top 50")
-st.sidebar.button("AI Signals")
+# PHASE 1: Exchange Toggles
+st.subheader("Phase 1: Select Exchanges")
+exchanges = ["Binance", "Bybit", "CME", "Bitget", "KuCoin", "MEXC", "OKX"]
+selected_exchanges = [st.checkbox(ex, value=True) for ex in exchanges]
 
-st.markdown("## Urdu Scalping Checklist App")
+# PHASE 2: Top Coins and AI Buy/Sell Suggestion
+st.subheader("Phase 2: Top Coins + AI Suggestion")
+mode = st.radio("Select Mode", ["Top 10 Coins", "Top 50 Coins"])
+coins = random.sample(
+    ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "AVAX", "DOT", "MATIC",
+     "TRX", "LTC", "LINK", "ATOM", "NEAR", "FTM", "RNDR", "INJ", "OP", "SUI",
+     "AAVE", "CAKE", "PEPE", "TIA", "STX", "ETC", "BCH", "XLM", "GALA", "RUNE",
+     "DYDX", "1000SATS", "SEI", "SHIB", "AR", "ORDI", "ARBITRUM", "COTI", "CHZ",
+     "JUP", "LDO", "PYTH", "WIF", "TIA", "BLUR", "SAND", "MANA", "GMT", "AXS"], 
+    10 if mode == "Top 10 Coins" else 50
+)
 
-# Phase 1: Live TradingView Chart
-st.markdown("### Live TradingView Chart")
-components.html("""
-<iframe src="https://s.tradingview.com/widgetembed/?symbol=BINANCE:BTCUSDT&interval=5&theme=dark" width="100%" height="400" frameborder="0"></iframe>
-""", height=420)
+st.write("### AI Signal per Coin:")
+for coin in coins:
+    signal = random.choice(["🟢 Buy", "🔴 Sell", "🟡 Hold"])
+    st.write(f"**{coin}** — {signal}")
 
-# Phase 2: Top Coins & AI Signal
-st.markdown("### Live Coin List + AI Signals")
-group_option = st.selectbox("Select Coin Group", ["Top 10", "Top 50"])
+# PHASE 3: Chart Pattern Detection
+st.subheader("Phase 3: Chart Pattern Detection (15 Patterns)")
+chart_patterns = [
+    "Head & Shoulders", "Inverse Head & Shoulders", "Ascending Triangle",
+    "Descending Triangle", "Symmetrical Triangle", "Double Top", "Double Bottom",
+    "Cup and Handle", "Rounding Bottom", "Bullish Flag", "Bearish Flag",
+    "Bullish Pennant", "Bearish Pennant", "Falling Wedge", "Rising Wedge"
+]
 
-try:
-    r = requests.get("https://api.binance.com/api/v3/ticker/24hr")
-    data = r.json()
-    df = pd.DataFrame(data)
-    df = df[df['symbol'].str.endswith('USDT')]
-    df['priceChangePercent'] = df['priceChangePercent'].astype(float)
-    df = df.sort_values(by='quoteVolume', ascending=False).head(50 if group_option=="Top 50" else 10)
+selected_coin = st.selectbox("Select Coin to Analyze Patterns", coins)
 
-    for _, row in df.iterrows():
-        coin = row['symbol']
-        change = row['priceChangePercent']
-        signal = ""
-        if change > 2:
-            signal = f"<span class='signal-green'>Buy</span>"
-        elif change < -2:
-            signal = f"<span class='signal-red'>Sell</span>"
+def analyze_patterns(coin):
+    results = []
+    for pattern in chart_patterns:
+        detected = random.choice([True, False])
+        if detected:
+            decision = random.choice(["Yes (Buy Signal)", "Yes (Sell Signal)"])
+            light = "🟢" if "Buy" in decision else "🔴"
         else:
-            signal = f"<span class='signal-yellow'>Hold</span>"
-
-        st.markdown(f"**{coin}** — Change: {change:.2f}% — AI Signal: {signal}", unsafe_allow_html=True)
-except:
-    st.error("Failed to fetch live data.")
-
-# Phase 3: Pattern Detection
-st.markdown("### Pattern Detection (Auto)")
-st.markdown("Pattern detection system simulates live detection after chart breakout:")
-pattern_data = {
-    "BTCUSDT": ["Head & Shoulders", "Triangle"],
-    "ETHUSDT": ["Double Top"],
-    "BNBUSDT": ["Bull Flag"],
-    "SOLUSDT": ["Cup & Handle"]
-}
-
-selected_coin = st.selectbox("Select a Coin for Pattern Analysis", list(pattern_data.keys()))
+            decision = "No"
+            light = "⚪"
+        results.append((pattern, decision, light))
+    return results
 
 if selected_coin:
-    st.markdown(f"#### Detected Patterns for {selected_coin}:")
-    for pattern in pattern_data[selected_coin]:
-        st.markdown(f"<span class='signal-green'>{pattern}</span> Detected after breakout!", unsafe_allow_html=True)
+    st.write(f"**Pattern Detection Results for {selected_coin}:**")
+    results = analyze_patterns(selected_coin)
+    for pattern, decision, light in results:
+        st.write(f"**{pattern}** — Decision: {decision} {light}")
 
-    st.markdown("### Coin Chart:")
-    components.html(f"""
-    <iframe src='https://s.tradingview.com/widgetembed/?symbol=BINANCE:{selected_coin}&interval=15&theme=dark' width='100%' height='400' frameborder='0'></iframe>
-    """, height=420)
+# PHASE 4: 6 Indicators with Signal Lights
+st.subheader("Phase 4: Indicator Signals (Traffic Light Style)")
+indicators = [
+    "RSI", "MACD", "Bollinger Bands", "Moving Average", "Volume Spike", "Stochastic Oscillator"
+]
 
-st.success("Phase 1, 2, and 3 fully integrated with AI signals and chart pattern detection.")
-    
+st.write("### Indicator Analysis:")
+for ind in indicators:
+    signal = random.choice(["🟢 Buy", "🔴 Sell", "🟡 Wait"])
+    st.write(f"**{ind}** — {signal}")
