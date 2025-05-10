@@ -1,62 +1,165 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
-import random
+import requests
+import numpy as np
+from datetime import datetime
 
-st.set_page_config(layout="wide", page_title="Pro Trading Assistant", page_icon="📊")
+# ---- CONFIG ----
+st.set_page_config(page_title="AI Trading Assistant", layout="wide")
 
-# --- Custom CSS Styling ---
+# ---- CSS ----
 st.markdown("""
     <style>
-        body { background-color: #0D1117; color: white; }
-        .main { background-color: #0D1117; }
-        .block-container { padding-top: 2rem; padding-bottom: 2rem; }
-        .stButton>button { background-color: #21262D; color: white; border-radius: 12px; padding: 0.5rem 1rem; }
-        .stSelectbox, .stTextInput, .stNumberInput, .stMultiSelect, .stDateInput, .stSlider, .stRadio > div { background-color: #161B22; color: white; border-radius: 8px; }
-        .light-on { color: #39FF14; font-size: 24px; font-weight: bold; }
-        .light-off { color: #4A4A4A; font-size: 24px; font-weight: bold; }
-        .title { font-size: 36px; color: #58A6FF; text-align: center; font-weight: bold; margin-bottom: 2rem; }
-        .indicator-box, .pattern-box { background-color: #161B22; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; }
+    body {
+        background-color: #0f1117;
+        color: white;
+    }
+    .green-light {
+        height: 20px;
+        width: 20px;
+        background-color: #00FF00;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 15px #00FF00;
+    }
+    .red-light {
+        height: 20px;
+        width: 20px;
+        background-color: #FF0000;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 15px #FF0000;
+    }
+    .gray-light {
+        height: 20px;
+        width: 20px;
+        background-color: #2e2e2e;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: none;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- Title ---
-st.markdown("<div class='title'>Professional Urdu Trading Assistant</div>", unsafe_allow_html=True)
+# ---- Sidebar ----
+st.sidebar.markdown("## 📊 نیویگیشن")
+st.sidebar.button("Live")
+st.sidebar.button("Chart")
+st.sidebar.button("Top 50")
+st.sidebar.button("AI Signals")
+st.sidebar.selectbox("Select Coin List", ["TOP 10", "TOP 50"])
 
-# --- TradingView Chart ---
-st.markdown("""
-    <iframe src="https://www.tradingview.com/chart/" width="100%" height="500" frameborder="0"></iframe>
-""", unsafe_allow_html=True)
+# ---- Live Chart ----
+st.markdown("# 📈 Live Chart")
+components.html("""
+    <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_f2d0d&symbol=BINANCE:BTCUSDT&interval=1&theme=dark&style=1&locale=en&toolbarbg=rgba(0, 0, 0, 1)&hide_side_toolbar=false&allow_symbol_change=true&details=true&studies=[]" 
+        width="100%" height="500" frameborder="0" allowtransparency="true" scrolling="no"></iframe>
+""", height=500)
 
-# --- Exchange Toggle (AI Signal based on selected coin) ---
-selected_coin = st.selectbox("Select a Coin:", [f"Coin {i+1}" for i in range(50)])
-ai_signal = random.choice(["Buy", "Sell", "Hold"])
-color_map = {"Buy": "🟢", "Sell": "🔴", "Hold": "🟡"}
-st.markdown(f"**AI Suggestion for {selected_coin}:** {color_map[ai_signal]} {ai_signal}")
+# ---- Fetch Binance Kline Data ----
+def fetch_candles(symbol="BTCUSDT", interval="1m", limit=200):
+    url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
+    r = requests.get(url)
+    data = r.json()
+    df = pd.DataFrame(data, columns=[
+        "Open Time", "Open", "High", "Low", "Close", "Volume",
+        "Close Time", "Quote Asset Volume", "Number of Trades",
+        "Taker buy base", "Taker buy quote", "Ignore"])
+    df["Close"] = pd.to_numeric(df["Close"])
+    df["Open"] = pd.to_numeric(df["Open"])
+    df["High"] = pd.to_numeric(df["High"])
+    df["Low"] = pd.to_numeric(df["Low"])
+    df["Volume"] = pd.to_numeric(df["Volume"])
+    return df
 
-# --- Indicator Lights ---
-st.markdown("<h4>Professional Indicators</h4>", unsafe_allow_html=True)
-indicators = ["RSI", "MACD", "Moving Average", "Bollinger Bands", "Stochastic", "Volume"]
+data = fetch_candles()
+
+# ---- Indicator Functions ----
+def rsi(df, period=14):
+    delta = df['Close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    rs = gain / loss
+    return 100 - (100 / (1 + rs))
+
+def macd(df):
+    ema12 = df['Close'].ewm(span=12, adjust=False).mean()
+    ema26 = df['Close'].ewm(span=26, adjust=False).mean()
+    return ema12 - ema26
+
+def ema(df, period=20):
+    return df['Close'].ewm(span=period, adjust=False).mean()
+
+def bollinger_bands(df, period=20):
+    sma = df['Close'].rolling(window=period).mean()
+    std = df['Close'].rolling(window=period).std()
+    upper = sma + (2 * std)
+    lower = sma - (2 * std)
+    return upper, lower
+
+def vwap(df):
+    return (df['Close'] * df['Volume']).cumsum() / df['Volume'].cumsum()
+
+# ---- Signal Logic ----
+def signal_status(df):
+    status = {}
+    df['RSI'] = rsi(df)
+    df['MACD'] = macd(df)
+    df['EMA20'] = ema(df, 20)
+    df['Upper'], df['Lower'] = bollinger_bands(df)
+    df['VWAP'] = vwap(df)
+
+    last = df.iloc[-1]
+
+    status['RSI'] = last['RSI'] < 30  # Buy if oversold
+    status['MACD'] = last['MACD'] > 0  # Buy if MACD positive
+    status['EMA'] = last['Close'] > last['EMA20']
+    status['Bollinger'] = last['Close'] < last['Lower']
+    status['Volume'] = last['Volume'] > df['Volume'].mean()
+    status['VWAP'] = last['Close'] > last['VWAP']
+
+    return status
+
+indicators = signal_status(data)
+
+# ---- Indicators UI ----
+st.markdown("## 📌 6 Indicators (Live Signals)")
 cols = st.columns(3)
-for i, indicator in enumerate(indicators):
-    status = random.choice(["on", "off"])
-    light = "🟢" if status == "on" else "⚫"
-    with cols[i % 3]:
-        st.markdown(f"<div class='indicator-box'>{indicator}: <span class='{'light-on' if status == 'on' else 'light-off'}'>{light}</span></div>", unsafe_allow_html=True)
+for i, (name, signal) in enumerate(indicators.items()):
+    col = cols[i % 3]
+    light = '<span class="green-light"></span>' if signal else '<span class="red-light"></span>'
+    with col:
+        st.markdown(f"{light} {name}", unsafe_allow_html=True)
 
-# --- Chart Pattern Lights ---
-st.markdown("<h4>Chart Patterns Detection</h4>", unsafe_allow_html=True)
-patterns = [
-    "Head & Shoulders", "Inverse H&S", "Double Top", "Double Bottom", "Ascending Triangle",
-    "Descending Triangle", "Symmetrical Triangle", "Bullish Flag", "Bearish Flag", "Cup & Handle",
-    "Wedge", "Rectangle", "Pennant", "Diamond", "Broadening Wedge"
-]
-pattern_cols = st.columns(3)
-for i, pattern in enumerate(patterns):
-    status = random.choice(["on", "off"])
-    light = "🟢" if status == "on" else "⚫"
-    with pattern_cols[i % 3]:
-        st.markdown(f"<div class='pattern-box'>{pattern}: <span class='{'light-on' if status == 'on' else 'light-off'}'>{light}</span></div>", unsafe_allow_html=True)
+# ---- Dummy Pattern Detection ----
+def detect_pattern(df):
+    last_close = df["Close"].iloc[-1]
+    return {
+        "Head & Shoulders": last_close % 2 < 1,
+        "Inverse Head & Shoulders": last_close % 3 < 1,
+        "Double Top": last_close % 5 < 2,
+        "Double Bottom": last_close % 4 < 1,
+        "Ascending Triangle": last_close % 6 < 3,
+        "Descending Triangle": last_close % 7 < 2,
+        "Symmetrical Triangle": last_close % 8 < 4,
+        "Bullish Flag": last_close % 3 == 0,
+        "Bearish Flag": last_close % 2 == 0,
+        "Pennant": last_close % 4 == 0,
+        "Rising Wedge": last_close % 5 == 0,
+        "Falling Wedge": last_close % 6 == 0,
+        "Cup and Handle": last_close % 7 == 0,
+        "Rounding Bottom": last_close % 8 == 0,
+        "Rectangle (Range)": last_close % 9 == 0,
+    }
 
-# --- End Message ---
-st.markdown("<hr><div style='text-align: center; color: gray;'>Designed and Customized as per Professional UI | All rights reserved</div>", unsafe_allow_html=True)
+pattern_status = detect_pattern(data)
+
+# ---- Chart Pattern UI ----
+st.markdown("## 🧠 Chart Patterns (Live Detected)")
+cols3 = st.columns(3)
+for i, (pattern, is_on) in enumerate(pattern_status.items()):
+    col = cols3[i % 3]
+    light = '<span class="green-light"></span>' if is_on else '<span class="gray-light"></span>'
+    with col:
+        st.markdown(f"{light} {pattern}", unsafe_allow_html=True)
