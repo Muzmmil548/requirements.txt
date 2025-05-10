@@ -1,4 +1,3 @@
-# tradingview_ta
 # Final Urdu Trading App Code
 # Includes: Live TradingView Chart, 6 Auto Indicators, 15 Chart Patterns, Safe Error Handling
 
