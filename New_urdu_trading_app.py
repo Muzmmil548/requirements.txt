@@ -1,71 +1,100 @@
-# Urdu Trading Assistant App (Phase 1 to 4)
 import streamlit as st
+import pandas as pd
 import random
+from streamlit.components.v1 import html
 
-st.set_page_config(layout="wide", page_title="Urdu Trading Assistant")
+st.set_page_config(layout="wide")
 
-st.title("Urdu Trading Assistant (Pro Version)")
-st.markdown("### Professional AI + Indicator + Pattern Based Scalping Checklist")
+st.markdown("""
+    <style>
+    body {
+        background-color: #0f1117;
+        color: white;
+    }
+    .signal {
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 10px;
+    }
+    .green { background-color: #00FF00; }
+    .yellow { background-color: #FFFF00; }
+    .red { background-color: #FF0000; }
+    .off { background-color: #333333; }
+    .section-header {
+        font-size: 24px;
+        font-weight: bold;
+        color: #00ffff;
+        margin-top: 20px;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# PHASE 1: Exchange Toggles
-st.subheader("Phase 1: Select Exchanges")
+st.title("Urdu Trading Assistant")
+
+# Phase 1: Exchange Toggle
+st.markdown("<div class='section-header'>Exchange Toggle</div>", unsafe_allow_html=True)
 exchanges = ["Binance", "Bybit", "CME", "Bitget", "KuCoin", "MEXC", "OKX"]
-selected_exchanges = [st.checkbox(ex, value=True) for ex in exchanges]
+selected_exchanges = []
+cols = st.columns(len(exchanges))
+for i, ex in enumerate(exchanges):
+    with cols[i]:
+        if st.toggle(ex):
+            selected_exchanges.append(ex)
 
-# PHASE 2: Top Coins and AI Buy/Sell Suggestion
-st.subheader("Phase 2: Top Coins + AI Suggestion")
-mode = st.radio("Select Mode", ["Top 10 Coins", "Top 50 Coins"])
-coins = random.sample(
-    ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "AVAX", "DOT", "MATIC",
-     "TRX", "LTC", "LINK", "ATOM", "NEAR", "FTM", "RNDR", "INJ", "OP", "SUI",
-     "AAVE", "CAKE", "PEPE", "TIA", "STX", "ETC", "BCH", "XLM", "GALA", "RUNE",
-     "DYDX", "1000SATS", "SEI", "SHIB", "AR", "ORDI", "ARBITRUM", "COTI", "CHZ",
-     "JUP", "LDO", "PYTH", "WIF", "TIA", "BLUR", "SAND", "MANA", "GMT", "AXS"], 
-    10 if mode == "Top 10 Coins" else 50
-)
-
-st.write("### AI Signal per Coin:")
-for coin in coins:
-    signal = random.choice(["🟢 Buy", "🔴 Sell", "🟡 Hold"])
-    st.write(f"**{coin}** — {signal}")
-
-# PHASE 3: Chart Pattern Detection
-st.subheader("Phase 3: Chart Pattern Detection (15 Patterns)")
-chart_patterns = [
-    "Head & Shoulders", "Inverse Head & Shoulders", "Ascending Triangle",
-    "Descending Triangle", "Symmetrical Triangle", "Double Top", "Double Bottom",
-    "Cup and Handle", "Rounding Bottom", "Bullish Flag", "Bearish Flag",
-    "Bullish Pennant", "Bearish Pennant", "Falling Wedge", "Rising Wedge"
-]
-
-selected_coin = st.selectbox("Select Coin to Analyze Patterns", coins)
-
-def analyze_patterns(coin):
-    results = []
-    for pattern in chart_patterns:
-        detected = random.choice([True, False])
-        if detected:
-            decision = random.choice(["Yes (Buy Signal)", "Yes (Sell Signal)"])
-            light = "🟢" if "Buy" in decision else "🔴"
-        else:
-            decision = "No"
-            light = "⚪"
-        results.append((pattern, decision, light))
-    return results
-
-if selected_coin:
-    st.write(f"**Pattern Detection Results for {selected_coin}:**")
-    results = analyze_patterns(selected_coin)
-    for pattern, decision, light in results:
-        st.write(f"**{pattern}** — Decision: {decision} {light}")
-
-# PHASE 4: 6 Indicators with Signal Lights
-st.subheader("Phase 4: Indicator Signals (Traffic Light Style)")
-indicators = [
-    "RSI", "MACD", "Bollinger Bands", "Moving Average", "Volume Spike", "Stochastic Oscillator"
-]
-
-st.write("### Indicator Analysis:")
+# Phase 2: Indicators with Traffic Light
+st.markdown("<div class='section-header'>Indicators</div>", unsafe_allow_html=True)
+indicators = ["RSI", "MACD", "Bollinger Bands", "SuperTrend", "EMA", "Volume"]
 for ind in indicators:
-    signal = random.choice(["🟢 Buy", "🔴 Sell", "🟡 Wait"])
-    st.write(f"**{ind}** — {signal}")
+    status = random.choice(["green", "yellow", "red"])
+    st.markdown(f"<span class='signal {status}'></span>{ind}", unsafe_allow_html=True)
+
+# Phase 3: Chart Patterns
+st.markdown("<div class='section-header'>Chart Patterns</div>", unsafe_allow_html=True)
+patterns = [
+    "Head & Shoulders", "Inverse Head & Shoulders", "Ascending Triangle", "Descending Triangle",
+    "Symmetrical Triangle", "Double Top", "Double Bottom", "Cup & Handle", "Rising Wedge",
+    "Falling Wedge", "Bullish Flag", "Bearish Flag", "Bullish Pennant", "Bearish Pennant", "Rectangle"
+]
+for pat in patterns:
+    status = random.choice(["green", "yellow", "off"])
+    st.markdown(f"<span class='signal {status}'></span>{pat}", unsafe_allow_html=True)
+
+# Phase 4: AI Suggestion for Top 50 Coins
+st.markdown("<div class='section-header'>AI Suggestions (Top 50 Coins)</div>", unsafe_allow_html=True)
+top_coins = [f"Coin{i+1}" for i in range(50)]
+coin = st.selectbox("Select a Coin", top_coins)
+signal = random.choice(["Buy", "Sell", "Hold"])
+color = {"Buy": "green", "Sell": "red", "Hold": "yellow"}[signal]
+st.markdown(f"<h4>Signal: <span class='signal {color}'></span> {signal}</h4>", unsafe_allow_html=True)
+
+# TradingView Chart
+st.markdown("<div class='section-header'>Live Chart</div>", unsafe_allow_html=True)
+html("""
+<!-- TradingView Widget BEGIN -->
+<div class="tradingview-widget-container">
+  <div id="tradingview_6b5b3"></div>
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+  <script type="text/javascript">
+  new TradingView.widget({
+    "width": "100%",
+    "height": 500,
+    "symbol": "BINANCE:BTCUSDT",
+    "interval": "1",
+    "timezone": "Etc/UTC",
+    "theme": "dark",
+    "style": "1",
+    "locale": "en",
+    "toolbar_bg": "#f1f3f6",
+    "enable_publishing": false,
+    "allow_symbol_change": true,
+    "container_id": "tradingview_6b5b3"
+  });
+  </script>
+</div>
+<!-- TradingView Widget END -->
+""", height=500)
+
+st.markdown("<hr>")
+st.markdown("<center><small>Final Phase 1-4 Complete UI with Traffic Light Indicators</small></center>", unsafe_allow_html=True)
