@@ -1,0 +1,4 @@
+streamlit
+pandas
+requests
+tradingview_ta
