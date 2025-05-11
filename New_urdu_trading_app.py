@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-Interval, Exchange
 class TradingViewApp:
     def __init__(self):
         self.exchanges = {
