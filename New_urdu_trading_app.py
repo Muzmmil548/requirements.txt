@@ -1,35 +1,29 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from binance.client import Client
+
 class TradingViewApp:
     def __init__(self):
-        self.exchanges = {
-            'Binance': False,
-            'Bybit': False,
-            'CME': False,
-            'Bitget': False,
-            'KuCoin': False,
-            'MEXC': False,
-            'OKX': False
-        }
         self.data = None
+        self.api_key = 'your_api_key'  # یہاں اپنی Binance API key ڈالیں
+        self.api_secret = 'your_api_secret'  # یہاں اپنی Binance Secret key ڈالیں
 
-    def toggle_exchange(self, exchange):
-        if exchange in self.exchanges:
-            self.exchanges[exchange] = not self.exchanges[exchange]
-
-    def fetch_live_data(self, exchange):
-        # Placeholder for fetching live data from the exchange API
-        # This should be replaced with actual API calls
-        return pd.DataFrame()
+    def fetch_live_data(self):
+        client = Client(self.api_key, self.api_secret)
+        klines = client.get_klines(symbol='BTCUSDT', interval=Client.KLINE_INTERVAL_1MINUTE)
+        data = pd.DataFrame(klines, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_asset_volume', 'number_of_trades', 'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'])
+        data['close'] = data['close'].astype(float)
+        data['high'] = data['high'].astype(float)
+        data['low'] = data['low'].astype(float)
+        data['volume'] = data['volume'].astype(float)
+        self.data = data[['close', 'high', 'low', 'volume']]
 
     def calculate_indicators(self):
         if self.data is not None:
-            self.data['EMA_20'] = self.data['Close'].ewm(span=20, adjust=False).mean()
-            self.data['RSI'] = self.calculate_rsi(self.data['Close'])
-            self.data['MACD'] = self.calculate_macd(self.data['Close'])
-            self.data['Volume_Spike'] = self.data['Volume'].rolling(window=20).mean()
-            self.data['VWAP'] = self.calculate_vwap(self.data)
-            self.data['Order_Imbalance'] = self.calculate_order_imbalance()
+            self.data['EMA_20'] = self.data['close'].ewm(span=20, adjust=False).mean()
+            self.data['RSI'] = self.calculate_rsi(self.data['close'])
 
     def calculate_rsi(self, series, period=14):
         delta = series.diff()
@@ -38,23 +32,11 @@ class TradingViewApp:
         rs = gain / loss
         return 100 - (100 / (1 + rs))
 
-    def calculate_macd(self, series):
-        exp1 = series.ewm(span=12, adjust=False).mean()
-        exp2 = series.ewm(span=26, adjust=False).mean()
-        return exp1 - exp2
-
-    def calculate_vwap(self, df):
-        return (df['Volume'] * (df['High'] + df['Low'] + df['Close']) / 3).cumsum() / df['Volume'].cumsum()
-
-    def calculate_order_imbalance(self):
-        # Placeholder for order imbalance calculation
-        return np.random.rand(len(self.data))
-
     def generate_signals(self):
         self.data['Signal'] = 'Neutral'
         conditions = [
-            (self.data['EMA_20'] > self.data['Close']) & (self.data['RSI'] < 30),
-            (self.data['EMA_20'] < self.data['Close']) & (self.data['RSI'] > 70)
+            (self.data['EMA_20'] > self.data['close']) & (self.data['RSI'] < 30),
+            (self.data['EMA_20'] < self.data['close']) & (self.data['RSI'] > 70)
         ]
         choices = ['Buy', 'Sell']
         self.data['Signal'] = np.select(conditions, choices, default='Neutral')
@@ -62,21 +44,18 @@ class TradingViewApp:
     def display_signals(self):
         color_map = {'Buy': 'green', 'Sell': 'red', 'Neutral': 'yellow'}
         self.data['Color'] = self.data['Signal'].map(color_map)
-        plt.scatter(self.data.index, self.data['Close'], c=self.data['Color'])
+        plt.scatter(self.data.index, self.data['close'], c=self.data['Color'])
         plt.title('Trading Signals')
         plt.xlabel('Time')
         plt.ylabel('Price')
-        plt.show()
+        st.pyplot(plt)  # Streamlit میں گراف دکھانے کے لیے
 
     def run(self):
-        for exchange, active in self.exchanges.items():
-            if active:
-                self.data = self.fetch_live_data(exchange)
-                self.calculate_indicators()
-                self.generate_signals()
-                self.display_signals()
+        self.fetch_live_data()
+        self.calculate_indicators()
+        self.generate_signals()
+        self.display_signals()
 
+# ایپلیکیشن چلائیں
 app = TradingViewApp()
-app.toggle_exchange('Binance')
 app.run()
-        
