@@ -1,8 +1,6 @@
+import streamlit as st
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import requests
-import json
+from tradingview_ta import TA_Handler, Interval, Exchange
 
 class TradingViewApp:
     def __init__(self):
