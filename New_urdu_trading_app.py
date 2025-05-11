@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-from tradingview_ta import TA_Handler, Interval, Exchange
-
+import TA_Handler, Interval, Exchange
+from tradingview_ta 
 class TradingViewApp:
     def __init__(self):
         self.exchanges = {
