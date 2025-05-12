@@ -1,4 +1,4 @@
 streamlit
+tradingview_ta
 pandas
 requests
-tradingview_ta
