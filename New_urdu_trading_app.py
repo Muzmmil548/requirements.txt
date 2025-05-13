@@ -3,21 +3,27 @@ from tradingview_ta import TA_Handler, Interval
 import streamlit.components.v1 as components
 
 # صفحہ سیٹنگ
-st.set_page_config(page_title="اردو ٹریڈنگ سگنل", layout="centered")
-st.title("اردو ٹریڈنگ سگنلز - لائیو چارٹ اور سگنلز کے ساتھ")
+st.set_page_config(page_title="اردو ٹریڈنگ سگنلز", layout="wide")
 
-# یوزر ان پٹ
-symbol = st.text_input("سکہ یا اسٹاک لکھیں (مثال: BTCUSDT)", value="BTCUSDT").upper()
+# ہیڈر
+st.markdown("<h1 style='text-align: center; color: #0E76A8;'>اردو ٹریڈنگ سگنلز</h1>", unsafe_allow_html=True)
 
-# لائیو TradingView چارٹ
-st.subheader("لائیو چارٹ:")
-components.iframe(
-    f"https://s.tradingview.com/widgetembed/?symbol=BINANCE%3A{symbol}&interval=1&theme=dark&style=1&locale=en&toolbarbg=F1F3F6",
-    height=400,
-    scrolling=True
-)
+# یوزر انپٹ
+st.markdown("### سکہ یا اسٹاک منتخب کریں:")
+symbol = st.text_input("مثال: BTCUSDT", value="BTCUSDT").upper()
 
-# سگنل چیکر
+# TradingView لائیو چارٹ کارڈ
+with st.container():
+    st.markdown("---")
+    st.markdown("### لائیو چارٹ (TradingView):")
+    components.iframe(
+        f"https://s.tradingview.com/widgetembed/?symbol=BINANCE%3A{symbol}&interval=1&theme=dark&style=1&locale=en&toolbarbg=F1F3F6",
+        height=400,
+        scrolling=True
+    )
+    st.markdown("---")
+
+# سگنل بٹن
 if st.button("سگنل چیک کریں"):
     try:
         handler = TA_Handler(
@@ -29,9 +35,8 @@ if st.button("سگنل چیک کریں"):
         analysis = handler.get_analysis()
         recommendation = analysis.summary["RECOMMENDATION"]
 
-        st.subheader("تجویز:")
-
-        # سگنل کے مطابق رنگی بتی
+        # سگنل کارڈ
+        st.markdown("### ٹریڈنگ سگنل:")
         if recommendation == "BUY":
             st.success("خریداری (BUY) - سبز بتی")
         elif recommendation == "SELL":
@@ -40,14 +45,16 @@ if st.button("سگنل چیک کریں"):
             st.warning("انتظار (NEUTRAL) - پیلی بتی")
 
         # خلاصہ
-        st.subheader("خلاصہ:")
-        for key, val in analysis.summary.items():
-            st.write(f"{key}: {val}")
+        st.markdown("### خلاصہ:")
+        with st.expander("تفصیل دیکھیں"):
+            for key, val in analysis.summary.items():
+                st.write(f"{key}: {val}")
 
         # تکنیکی انڈیکیٹرز
-        st.subheader("تکنیکی انڈیکیٹرز:")
-        for ind, val in analysis.indicators.items():
-            st.write(f"{ind}: {val}")
+        st.markdown("### تکنیکی انڈیکیٹرز:")
+        with st.expander("انڈیکیٹرز دیکھیں"):
+            for ind, val in analysis.indicators.items():
+                st.write(f"{ind}: {val}")
 
     except Exception as e:
         st.error(f"کچھ غلط ہو گیا: {e}")
