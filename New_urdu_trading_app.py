@@ -5,6 +5,21 @@ import streamlit.components.v1 as components
 # صفحہ سیٹنگ
 st.set_page_config(page_title="اردو ٹریڈنگ سگنلز", layout="wide")
 
+# بیک گراؤنڈ رنگ اور کارڈ اسٹائل
+st.markdown("""
+    <style>
+        .main {
+            background-color: #f4f4f4; /* یا اپنی مرضی کا رنگ */
+        }
+        .signal-card {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # ہیڈر
 st.markdown("<h1 style='text-align: center; color: #0E76A8;'>اردو ٹریڈنگ سگنلز</h1>", unsafe_allow_html=True)
 
@@ -36,13 +51,15 @@ if st.button("سگنل چیک کریں"):
         recommendation = analysis.summary["RECOMMENDATION"]
 
         # سگنل کارڈ
-        st.markdown("### ٹریڈنگ سگنل:")
-        if recommendation == "BUY":
-            st.success("خریداری (BUY) - سبز بتی")
-        elif recommendation == "SELL":
-            st.error("فروخت (SELL) - سرخ بتی")
-        else:
-            st.warning("انتظار (NEUTRAL) - پیلی بتی")
+        with st.container():
+            st.markdown('<div class="signal-card">', unsafe_allow_html=True)
+            if recommendation == "BUY":
+                st.markdown("<h2 style='color: green;'>خریداری (BUY) - سبز بتی</h2>", unsafe_allow_html=True)
+            elif recommendation == "SELL":
+                st.markdown("<h2 style='color: red;'>فروخت (SELL) - سرخ بتی</h2>", unsafe_allow_html=True)
+            else:
+                st.markdown("<h2 style='color: yellow;'>انتظار (NEUTRAL) - پیلی بتی</h2>", unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # خلاصہ
         st.markdown("### خلاصہ:")
