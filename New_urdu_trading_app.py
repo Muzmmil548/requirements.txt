@@ -2,54 +2,88 @@ import streamlit as st
 import streamlit.components.v1 as components
 import time
 
-# --- Sidebar / Bottom Navbar as Tabs ---
-tabs = {
-    "Home": "🏠",
-    "Chart Patterns": "📈",
-    "AI Signals": "🤖",
-    "Top Coins": "💰",
-    "Settings": "⚙️"
-}
-selected_tab = st.selectbox("نیچے سے صفحہ منتخب کریں", list(tabs.keys()), format_func=lambda x: f"{tabs[x]} {x}")
+# --- Page Config ---
+st.set_page_config(page_title="Scalping App", layout="wide")
 
-# --- App Title ---
-st.markdown("<h1 style='text-align: center; color: yellow;'>Urdu Scalping Checklist App</h1>", unsafe_allow_html=True)
+# --- CSS for Bottom Navigation Bar ---
+st.markdown("""
+    <style>
+    .nav-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background-color: #111;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        z-index: 100;
+    }
+    .nav-item {
+        color: white;
+        text-align: center;
+        font-size: 14px;
+        cursor: pointer;
+    }
+    .nav-item:hover {
+        color: yellow;
+    }
+    .active {
+        color: yellow;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# --- TradingView Chart at Top ---
-if selected_tab in ["Home", "Chart Patterns", "AI Signals", "Top Coins"]:
-    st.markdown("### Live Chart")
+# --- Session State for Navigation ---
+if "page" not in st.session_state:
+    st.session_state.page = "Home"
+
+# --- Fake navbar using radio button ---
+selected = st.radio("Menu", ["Home", "Chart Patterns", "AI Signals", "Top Coins", "Settings"],
+                    index=["Home", "Chart Patterns", "AI Signals", "Top Coins", "Settings"].index(st.session_state.page),
+                    horizontal=True, label_visibility="collapsed")
+
+st.session_state.page = selected
+
+# --- Live TradingView Chart (only shown in top pages) ---
+def show_chart():
+    st.markdown("### Live TradingView Chart")
     components.html("""
         <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=BINANCE:BTCUSDT&interval=15&theme=dark&style=1&locale=en" 
         width="100%" height="400" frameborder="0"></iframe>
     """, height=400)
 
-# --- Tab Content ---
-if selected_tab == "Home":
-    st.success("Welcome to the Urdu Scalping Checklist App.")
+# --- Pages ---
+if st.session_state.page == "Home":
+    st.title("🏠 Home")
+    show_chart()
+    st.success("Welcome to the Urdu Trading App.")
 
-elif selected_tab == "Chart Patterns":
-    st.subheader("چارٹ پیٹرن خودکار تجزیہ")
+elif st.session_state.page == "Chart Patterns":
+    st.title("📈 Chart Patterns")
+    show_chart()
+    st.markdown("چارٹ پیٹرن خودکار تجزیہ")
     patterns = ["Head & Shoulders", "Double Top", "Triangle", "Cup & Handle"]
     for pattern in patterns:
-        with st.container():
-            st.markdown(f"**{pattern}**")
-            st.markdown("<span style='color: green; animation: blink 1s infinite;'>● Detected</span>", unsafe_allow_html=True)
-            time.sleep(0.1)
+        st.markdown(f"- {pattern}: <span class='blinking' style='color: green;'>● Detected</span>", unsafe_allow_html=True)
 
-elif selected_tab == "AI Signals":
-    st.subheader("AI اسسٹنٹ سگنلز")
+elif st.session_state.page == "AI Signals":
+    st.title("🤖 AI Signals")
+    show_chart()
     st.info("BTC: 🟢 Buy")
     st.warning("ETH: 🟡 Hold")
     st.error("SOL: 🔴 Sell")
 
-elif selected_tab == "Top Coins":
-    st.subheader("Top 10 Coins")
-    top_coins = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "DOT", "AVAX", "LINK"]
-    selected_coin = st.selectbox("کوائن منتخب کریں", top_coins)
-    st.write(f"آپ نے منتخب کیا ہے: **{selected_coin}**")
+elif st.session_state.page == "Top Coins":
+    st.title("💰 Top 10 Coins")
+    show_chart()
+    coins = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "DOT", "AVAX", "LINK"]
+    selected = st.selectbox("کوائن منتخب کریں", coins)
+    st.success(f"آپ نے منتخب کیا ہے: **{selected}**")
 
-elif selected_tab == "Settings":
-    st.subheader("ایپ کی سیٹنگز")
+elif st.session_state.page == "Settings":
+    st.title("⚙️ Settings")
     st.toggle("Dark Mode")
     st.toggle("Auto Refresh")
 
@@ -57,10 +91,12 @@ elif selected_tab == "Settings":
 st.markdown("""
     <style>
     @keyframes blink {
-      50% { opacity: 0.0; }
+        0% {opacity: 1;}
+        50% {opacity: 0;}
+        100% {opacity: 1;}
     }
     .blinking {
-      animation: blink 1s infinite;
+        animation: blink 1s infinite;
     }
     </style>
 """, unsafe_allow_html=True)
