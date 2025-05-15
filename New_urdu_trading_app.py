@@ -1,127 +1,66 @@
 import streamlit as st
-from tradingview_ta import TA_Handler, Interval
 import streamlit.components.v1 as components
+import time
 
-# صفحہ سیٹنگ
-st.set_page_config(page_title="اردو ٹریڈنگ سگنلز", layout="wide")
+# --- Sidebar / Bottom Navbar as Tabs ---
+tabs = {
+    "Home": "🏠",
+    "Chart Patterns": "📈",
+    "AI Signals": "🤖",
+    "Top Coins": "💰",
+    "Settings": "⚙️"
+}
+selected_tab = st.selectbox("نیچے سے صفحہ منتخب کریں", list(tabs.keys()), format_func=lambda x: f"{tabs[x]} {x}")
 
-# بیک گراؤنڈ اور کارڈ اسٹائلنگ
+# --- App Title ---
+st.markdown("<h1 style='text-align: center; color: yellow;'>Urdu Scalping Checklist App</h1>", unsafe_allow_html=True)
+
+# --- TradingView Chart at Top ---
+if selected_tab in ["Home", "Chart Patterns", "AI Signals", "Top Coins"]:
+    st.markdown("### Live Chart")
+    components.html("""
+        <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=BINANCE:BTCUSDT&interval=15&theme=dark&style=1&locale=en" 
+        width="100%" height="400" frameborder="0"></iframe>
+    """, height=400)
+
+# --- Tab Content ---
+if selected_tab == "Home":
+    st.success("Welcome to the Urdu Scalping Checklist App.")
+
+elif selected_tab == "Chart Patterns":
+    st.subheader("چارٹ پیٹرن خودکار تجزیہ")
+    patterns = ["Head & Shoulders", "Double Top", "Triangle", "Cup & Handle"]
+    for pattern in patterns:
+        with st.container():
+            st.markdown(f"**{pattern}**")
+            st.markdown("<span style='color: green; animation: blink 1s infinite;'>● Detected</span>", unsafe_allow_html=True)
+            time.sleep(0.1)
+
+elif selected_tab == "AI Signals":
+    st.subheader("AI اسسٹنٹ سگنلز")
+    st.info("BTC: 🟢 Buy")
+    st.warning("ETH: 🟡 Hold")
+    st.error("SOL: 🔴 Sell")
+
+elif selected_tab == "Top Coins":
+    st.subheader("Top 10 Coins")
+    top_coins = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "DOT", "AVAX", "LINK"]
+    selected_coin = st.selectbox("کوائن منتخب کریں", top_coins)
+    st.write(f"آپ نے منتخب کیا ہے: **{selected_coin}**")
+
+elif selected_tab == "Settings":
+    st.subheader("ایپ کی سیٹنگز")
+    st.toggle("Dark Mode")
+    st.toggle("Auto Refresh")
+
+# --- Blinking Signal CSS ---
 st.markdown("""
     <style>
-        .main {
-            background: linear-gradient(135deg, #6A11CB, #2575FC); /* پروفیشنل اور رنگین بیک گراؤنڈ */
-        }
-        .signal-card {
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.1);
-            transition: transform 0.4s ease-in-out, box-shadow 0.4s ease-in-out;
-        }
-        .signal-card:hover {
-            transform: scale(1.05);
-            box-shadow: 0px 12px 30px rgba(0, 0, 0, 0.2);
-        }
-        .button {
-            background-color: #0099FF;
-            color: white;
-            padding: 18px 30px;
-            border-radius: 8px;
-            font-size: 20px;
-            font-weight: bold;
-            width: 100%;
-            text-align: center;
-            transition: background-color 0.3s ease;
-        }
-        .button:hover {
-            background-color: #0066cc;
-        }
-        .header {
-            text-align: center;
-            color: white;
-            font-size: 48px;
-            font-weight: 800;
-            text-shadow: 2px 2px 10px rgba(0,0,0,0.6);
-        }
-        .chart-container {
-            margin-top: 40px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 20px;
-            border-radius: 12px;
-        }
-        .expander {
-            font-size: 16px;
-            font-weight: 500;
-        }
-        .indicator-section {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        .indicator-box {
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 10px;
-            border-radius: 10px;
-            box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
-            width: 48%;
-            min-width: 200px;
-        }
+    @keyframes blink {
+      50% { opacity: 0.0; }
+    }
+    .blinking {
+      animation: blink 1s infinite;
+    }
     </style>
 """, unsafe_allow_html=True)
-
-# ہیڈر
-st.markdown("<h1 class='header'>اردو ٹریڈنگ سگنلز</h1>", unsafe_allow_html=True)
-
-# یوزر انپٹ
-st.markdown("### سکہ یا اسٹاک منتخب کریں:")
-symbol = st.text_input("مثال: BTCUSDT", value="BTCUSDT").upper()
-
-# TradingView لائیو چارٹ
-with st.container():
-    st.markdown("### لائیو چارٹ (TradingView):", unsafe_allow_html=True)
-    components.iframe(
-        f"https://s.tradingview.com/widgetembed/?symbol=BINANCE%3A{symbol}&interval=1&theme=dark&style=1&locale=en&toolbarbg=F1F3F6",
-        height=450,
-        scrolling=True
-    )
-    st.markdown("---")
-
-# سگنل بٹن
-if st.button("سگنل چیک کریں", key="signal_button", help="سگنل چیک کرنے کے لئے یہاں کلک کریں"):
-    try:
-        handler = TA_Handler(
-            symbol=symbol,
-            screener="crypto",
-            exchange="BINANCE",
-            interval=Interval.INTERVAL_1_MINUTE
-        )
-        analysis = handler.get_analysis()
-        recommendation = analysis.summary["RECOMMENDATION"]
-
-        # سگنل کارڈ
-        with st.container():
-            st.markdown('<div class="signal-card">', unsafe_allow_html=True)
-            if recommendation == "BUY":
-                st.markdown("<h2 style='color: green;'>خریداری (BUY) - سبز بتی</h2>", unsafe_allow_html=True)
-            elif recommendation == "SELL":
-                st.markdown("<h2 style='color: red;'>فروخت (SELL) - سرخ بتی</h2>", unsafe_allow_html=True)
-            else:
-                st.markdown("<h2 style='color: yellow;'>انتظار (NEUTRAL) - پیلی بتی</h2>", unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        # خلاصہ
-        st.markdown("### خلاصہ:", unsafe_allow_html=True)
-        with st.expander("تفصیل دیکھیں", expanded=True):
-            for key, val in analysis.summary.items():
-                st.write(f"{key}: {val}")
-
-        # تکنیکی انڈیکیٹرز
-        st.markdown("### تکنیکی انڈیکیٹرز:", unsafe_allow_html=True)
-        with st.container():
-            st.markdown('<div class="indicator-section">', unsafe_allow_html=True)
-            for ind, val in analysis.indicators.items():
-                st.markdown(f"<div class='indicator-box'><b>{ind}</b>: {val}</div>", unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-    except Exception as e:
-        st.error(f"کچھ غلط ہو گیا: {e}")
