@@ -12,6 +12,6 @@ st.markdown("""
     <div style='text-align:center;'>براہ کرم بائیں طرف موجود مینوز سے صفحہ منتخب کریں</div>
 """, unsafe_allow_html=True)
 
-st.image("https://assets.tradingview.com/banners/crypto.svg", use_column_width=True)
+st.image("https://assets.tradingview.com/banners/crypto.svg", use_container_width=True)
 
 st.success("سکرین کے بائیں جانب سے ایک آپشن منتخب کریں: سکہ منتخب کریں، پیٹرن، سگنلز یا سیٹنگز")
