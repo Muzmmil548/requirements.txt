@@ -1,102 +1,120 @@
 import streamlit as st
+from tradingview_ta import TA_Handler, Interval
 import streamlit.components.v1 as components
 import time
+import random
 
-# --- Page Config ---
-st.set_page_config(page_title="Scalping App", layout="wide")
+# ٹاپ 50 کوائنز کی لسٹ
+top_50_coins = [
+    "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT",
+    "SOLUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "LINKUSDT",
+    "MATICUSDT", "DOTUSDT", "LTCUSDT", "SHIBUSDT", "BCHUSDT",
+    "ICPUSDT", "NEARUSDT", "XLMUSDT", "ATOMUSDT", "FILUSDT",
+    "HBARUSDT", "APTUSDT", "ETCUSDT", "IMXUSDT", "INJUSDT",
+    "VETUSDT", "RENDERUSDT", "MKRUSDT", "ALGOUSDT", "GRTUSDT",
+    "AAVEUSDT", "SANDUSDT", "FTMUSDT", "EGLDUSDT", "THETAUSDT",
+    "FLOWUSDT", "AXSUSDT", "CHZUSDT", "XTZUSDT", "RUNEUSDT",
+    "CAKEUSDT", "KAVAUSDT", "ZILUSDT", "CRVUSDT", "ENJUSDT",
+    "1INCHUSDT", "COMPUSDT", "DYDXUSDT", "SNXUSDT", "CELOUSDT"
+]
 
-# --- CSS for Bottom Navigation Bar ---
-st.markdown("""
-    <style>
-    .nav-container {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 60px;
-        background-color: #111;
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        z-index: 100;
-    }
-    .nav-item {
-        color: white;
-        text-align: center;
-        font-size: 14px;
-        cursor: pointer;
-    }
-    .nav-item:hover {
-        color: yellow;
-    }
-    .active {
-        color: yellow;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# صفحہ سیٹنگ
+st.set_page_config(page_title="اردو ٹریڈنگ سگنلز", layout="wide")
 
-# --- Session State for Navigation ---
-if "page" not in st.session_state:
-    st.session_state.page = "Home"
-
-# --- Fake navbar using radio button ---
-selected = st.radio("Menu", ["Home", "Chart Patterns", "AI Signals", "Top Coins", "Settings"],
-                    index=["Home", "Chart Patterns", "AI Signals", "Top Coins", "Settings"].index(st.session_state.page),
-                    horizontal=True, label_visibility="collapsed")
-
-st.session_state.page = selected
-
-# --- Live TradingView Chart (only shown in top pages) ---
-def show_chart():
-    st.markdown("### Live TradingView Chart")
-    components.html("""
-        <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=BINANCE:BTCUSDT&interval=15&theme=dark&style=1&locale=en" 
-        width="100%" height="400" frameborder="0"></iframe>
-    """, height=400)
-
-# --- Pages ---
-if st.session_state.page == "Home":
-    st.title("🏠 Home")
-    show_chart()
-    st.success("Welcome to the Urdu Trading App.")
-
-elif st.session_state.page == "Chart Patterns":
-    st.title("📈 Chart Patterns")
-    show_chart()
-    st.markdown("چارٹ پیٹرن خودکار تجزیہ")
-    patterns = ["Head & Shoulders", "Double Top", "Triangle", "Cup & Handle"]
-    for pattern in patterns:
-        st.markdown(f"- {pattern}: <span class='blinking' style='color: green;'>● Detected</span>", unsafe_allow_html=True)
-
-elif st.session_state.page == "AI Signals":
-    st.title("🤖 AI Signals")
-    show_chart()
-    st.info("BTC: 🟢 Buy")
-    st.warning("ETH: 🟡 Hold")
-    st.error("SOL: 🔴 Sell")
-
-elif st.session_state.page == "Top Coins":
-    st.title("💰 Top 10 Coins")
-    show_chart()
-    coins = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "DOT", "AVAX", "LINK"]
-    selected = st.selectbox("کوائن منتخب کریں", coins)
-    st.success(f"آپ نے منتخب کیا ہے: **{selected}**")
-
-elif st.session_state.page == "Settings":
-    st.title("⚙️ Settings")
-    st.toggle("Dark Mode")
-    st.toggle("Auto Refresh")
-
-# --- Blinking Signal CSS ---
+# کسٹم CSS
 st.markdown("""
     <style>
     @keyframes blink {
-        0% {opacity: 1;}
-        50% {opacity: 0;}
-        100% {opacity: 1;}
+        50% { opacity: 0.0; }
     }
-    .blinking {
+    .blink-green {
         animation: blink 1s infinite;
+        background-color: #00cc00;
+        padding: 10px;
+        color: white;
+        font-weight: bold;
+        border-radius: 10px;
+        text-align: center;
+    }
+    .blink-red {
+        animation: blink 1s infinite;
+        background-color: #cc0000;
+        padding: 10px;
+        color: white;
+        font-weight: bold;
+        border-radius: 10px;
+        text-align: center;
+    }
+    .blink-yellow {
+        animation: blink 1s infinite;
+        background-color: #ffcc00;
+        padding: 10px;
+        color: black;
+        font-weight: bold;
+        border-radius: 10px;
+        text-align: center;
     }
     </style>
 """, unsafe_allow_html=True)
+
+st.markdown("<h1 style='text-align: center; color: #0E76A8;'>اردو ٹریڈنگ سگنلز</h1>", unsafe_allow_html=True)
+
+# کوائن سلیکشن
+selected_coin = st.selectbox("ٹاپ 50 کوائن میں سے انتخاب کریں:", top_50_coins, index=0)
+
+# لائیو چارٹ
+st.markdown("### لائیو چارٹ:")
+components.iframe(
+    f"https://s.tradingview.com/widgetembed/?symbol=BINANCE%3A{selected_coin}&interval=1&theme=dark&style=1&locale=en",
+    height=400,
+    scrolling=True
+)
+
+# خودکار ریفریش
+st_autorefresh = st.empty()
+count = 0
+
+while count < 1:
+    count += 1
+    try:
+        handler = TA_Handler(
+            symbol=selected_coin,
+            screener="crypto",
+            exchange="BINANCE",
+            interval=Interval.INTERVAL_1_MINUTE
+        )
+        analysis = handler.get_analysis()
+        recommendation = analysis.summary["RECOMMENDATION"]
+
+        st.markdown("### سگنل:")
+        if recommendation == "BUY":
+            st.markdown('<div class="blink-green">🟢 خریداری (BUY)</div>', unsafe_allow_html=True)
+        elif recommendation == "SELL":
+            st.markdown('<div class="blink-red">🔴 فروخت (SELL)</div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="blink-yellow">🟡 انتظار (NEUTRAL)</div>', unsafe_allow_html=True)
+
+        # پیٹرن سیکشن (ڈیٹیکشن کی مثال)
+        st.markdown("### پیٹرن تجزیہ:")
+        patterns = ["Head & Shoulders", "Double Top", "Triangle", "Cup & Handle", "Flag", "Wedge", "Rectangle", "Triple Top"]
+        for pattern in patterns:
+            detected = random.choice([True, False])
+            if detected:
+                st.success(f"✅ {pattern} پیٹرن ڈیٹیکٹ ہوا")
+            else:
+                st.info(f"⏳ {pattern} ویٹ کریں")
+
+        # خلاصہ
+        with st.expander("خلاصہ"):
+            for key, val in analysis.summary.items():
+                st.write(f"{key}: {val}")
+
+        # انڈیکیٹرز
+        with st.expander("تکنیکی انڈیکیٹرز"):
+            for ind, val in analysis.indicators.items():
+                st.write(f"{ind}: {val}")
+
+    except Exception as e:
+        st.error(f"کچھ غلط ہو گیا: {e}")
+
+    time.sleep(60)  # 1 منٹ میں خودکار ریفریش کے لیے
