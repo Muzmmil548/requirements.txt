@@ -2,15 +2,17 @@ import streamlit as st
 import time
 import random
 
-# سیٹنگز
+# --- Settings Sidebar ---
 st.sidebar.title("سیٹنگز")
-auto_refresh = st.sidebar.toggle("آٹو ریفریش", value=True)
+
+# Auto Refresh Toggle
+auto_refresh = st.sidebar.checkbox("آٹو ریفریش آن کریں", value=False)
 refresh_interval = st.sidebar.slider("ریفریش وقفہ (سیکنڈ)", 10, 300, 60)
 
-# ہیڈر
+# --- Title ---
 st.title("اردو ٹریڈنگ اسسٹنٹ")
 
-# چارٹ پیٹرن مثالیں
+# --- Chart Patterns ---
 chart_patterns = {
     "Head & Shoulders": True,
     "Double Top": True,
@@ -29,16 +31,14 @@ chart_patterns = {
     "Ascending Triangle": False
 }
 
-# سگنلز کا رنگ
 def pattern_status(detected):
     return "✅ ڈیٹیکٹ ہوا" if detected else "⏳ ویٹ کریں"
 
-# پیٹرن لسٹ دکھائیں
 st.subheader("چارٹ پیٹرن تجزیہ")
 for pattern, detected in chart_patterns.items():
     st.write(f"{pattern}: {pattern_status(detected)}")
 
-# انڈیکیٹر سگنلز (مثال کے طور پر)
+# --- Indicator Analysis ---
 st.subheader("انڈیکیٹر رائے")
 buy = random.randint(8, 13)
 sell = random.randint(5, 10)
@@ -50,7 +50,6 @@ st.write(f"BUY: {buy}")
 st.write(f"SELL: {sell}")
 st.write(f"NEUTRAL: {neutral}")
 
-# سگنل آئیکن
 def signal_icon():
     if recommendation == "BUY":
         return "🟢"
@@ -61,10 +60,10 @@ def signal_icon():
 
 st.markdown(f"### سگنل: {signal_icon()}")
 
-# آٹو ریفریش فنکشن
+# --- Auto Refresh Logic ---
 if auto_refresh:
-    st.caption(f"یہ پیج ہر {refresh_interval} سیکنڈ بعد خود ریفریش ہو گا۔")
+    st.success(f"آٹو ریفریش فعال ہے - ہر {refresh_interval} سیکنڈ بعد اپڈیٹ ہو گا")
     time.sleep(refresh_interval)
     st.experimental_rerun()
 else:
-    st.caption("آٹو ریفریش بند ہے۔")
+    st.info("آٹو ریفریش بند ہے۔ آپ دستی طور پر ریفریش کر سکتے ہیں۔")
