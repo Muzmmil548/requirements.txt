@@ -1,60 +1,75 @@
 import streamlit as st
-import random
-from streamlit_autorefresh import st_autorefresh
+import time
+import requests
+from datetime import datetime
+import plotly.graph_objects as go
 
-# آٹو ریفریش ہر 30 سیکنڈ بعد
-st_autorefresh(interval=30 * 1000, key="refresh")
+# =========================
+# ریفریش فنکشن
+# =========================
+def auto_refresh(interval=30):
+    refresh_toggle = st.toggle("🔄 Auto Refresh", value=True)
+    if refresh_toggle:
+        st.caption(f"ہر {interval} سیکنڈ بعد پیج خود ریفریش ہوگا")
+        time.sleep(interval)
+        st.experimental_rerun()
 
-st.set_page_config(page_title="Urdu Trading Assistant", layout="wide")
+# =========================
+# مین ہیڈر اور ریفریش
+# =========================
+st.set_page_config(layout="wide")
+st.title("پروفیشنل اردو ٹریڈنگ اسسٹنٹ")
+auto_refresh(30)
+if st.button("ریفریش کریں"):
+    st.experimental_rerun()
 
-# سائیڈبار
-st.sidebar.title("سیٹنگز")
-st.sidebar.write("یہ صفحہ ہر 30 سیکنڈ میں خود ریفریش ہو گا۔")
+# =========================
+# کوائن چناؤ
+# =========================
+st.sidebar.title("کوائن منتخب کریں")
+selected_coin = st.sidebar.selectbox("کوائن چنیں:", ["BTC/USDT", "ETH/USDT", "BNB/USDT"])
 
-st.title("اردو پروفیشنل ٹریڈنگ اسسٹنٹ")
-st.markdown("تمام اہم انڈیکیٹر اور چارٹ پیٹرن کا خودکار تجزیہ")
+# =========================
+# لائیو چارٹ (ڈمی)
+# =========================
+st.subheader("لائیو چارٹ:")
+st.image("https://i.ibb.co/N2x7g1m/chart-example.png", caption=selected_coin)
 
-patterns = [
-    "Head & Shoulders", "Double Top", "Double Bottom", "Triple Top", "Triple Bottom",
-    "Triangle", "Wedge", "Flag", "Pennant", "Rectangle",
-    "Cup & Handle", "Rounding Bottom", "Inverse Head & Shoulders",
-    "Ascending Triangle", "Descending Triangle"
-]
+# =========================
+# سگنلز
+# =========================
+st.markdown("### سگنل:")
+st.success("🟢 خریداری کا سگنل (Buy Signal Active)")
 
-def ai_indicator_summary():
-    buy = random.randint(8, 14)
-    sell = random.randint(4, 10)
-    neutral = 20 - buy - sell
-    summary = "NEUTRAL"
-    emoji = "🟡"
-    if buy >= 13:
-        summary = "STRONG BUY"
-        emoji = "🟢"
-    elif sell >= 13:
-        summary = "STRONG SELL"
-        emoji = "🔴"
-    elif buy > sell:
-        summary = "BUY"
-        emoji = "🟢"
-    elif sell > buy:
-        summary = "SELL"
-        emoji = "🔴"
-    return summary, buy, sell, neutral, emoji
+# =========================
+# پیٹرن تجزیہ
+# =========================
+st.markdown("### پیٹرن تجزیہ:")
+st.info("✅ Head & Shoulders پیٹرن ڈیٹیکٹ ہوا")
 
-def detect_patterns():
-    st.subheader("پیٹرن تجزیہ:")
-    for pattern in patterns:
-        detected = random.choice([True, False])
-        if detected:
-            st.success(f"✅ {pattern} پیٹرن ڈیٹیکٹ ہوا")
-        else:
-            st.info(f"⏳ {pattern} ویٹ کریں")
+# =========================
+# ایکسچینج آن/آف
+# =========================
+st.sidebar.markdown("## ایکسچینج آن/آف:")
+exchanges = {
+    "Binance": st.sidebar.checkbox("Binance", value=True),
+    "Bybit": st.sidebar.checkbox("Bybit", value=True),
+    "CME": st.sidebar.checkbox("CME Futures", value=False),
+    "Bitget": st.sidebar.checkbox("Bitget", value=False),
+    "KuCoin": st.sidebar.checkbox("KuCoin", value=False),
+    "MEXC": st.sidebar.checkbox("MEXC", value=False),
+    "OKX": st.sidebar.checkbox("OKX", value=False),
+}
 
-def show_ai_signals():
-    st.subheader("سگنل:")
-    summary, buy, sell, neutral, emoji = ai_indicator_summary()
-    st.write(f"**RECOMMENDATION: {summary} {emoji}**")
-    st.write(f"**BUY:** {buy} | **SELL:** {sell} | **NEUTRAL:** {neutral}")
+# =========================
+# نتائج
+# =========================
+st.markdown("### ایکسچینج اسٹیٹس:")
+for name, active in exchanges.items():
+    color = "🟢" if active else "🔴"
+    st.write(f"{color} {name} {'آن' if active else 'آف'}")
 
-show_ai_signals()
-detect_patterns()
+# =========================
+# فٹ نوٹ
+# =========================
+st.caption("AI اسسٹنٹ خودکار تجزیہ دیتا ہے، فیصلہ سمجھداری سے کریں۔")
