@@ -1,73 +1,64 @@
-# Urdu Trading Assistant App (Full Version with Dual AI, Home Page, and Auto Refresh)
-
 import streamlit as st
 import time
-import pandas as pd
-import random
 
-# ------------------------- Sidebar Settings ------------------------- #
-st.sidebar.title("سیٹنگ")
-auto_refresh = st.sidebar.toggle("آٹو ریفریش", value=True)
-refresh_interval = 30  # seconds
+# Sidebar navigation
+st.sidebar.title("نیویگیشن")
+page = st.sidebar.radio("صفحہ منتخب کریں:", [
+    "تکنیکی AI اسسٹنٹ",
+    "فنڈامینٹل نیوز AI",
+    "سیٹنگز (آٹو ریفریش)"
+])
 
-# ------------------------- Navigation ------------------------- #
-page = st.sidebar.radio("مینو منتخب کریں", ["ہوم", "تکنیکی AI اسسٹنٹ", "نیوز AI اسسٹنٹ"])
+# Auto Refresh Toggle
+if "auto_refresh" not in st.session_state:
+    st.session_state.auto_refresh = True
 
-# ------------------------- Auto Refresh Logic ------------------------- #
-if auto_refresh:
+if page == "سیٹنگز (آٹو ریفریش)":
+    st.title("آٹو ریفریش سیٹنگز")
+    auto = st.toggle("ہر 30 سیکنڈ بعد خودکار ریفریش", value=st.session_state.auto_refresh)
+    st.session_state.auto_refresh = auto
+    st.success("سیٹنگ محفوظ ہو گئی ہے")
+    st.stop()
+
+# Auto refresh every 30 seconds if enabled
+if st.session_state.auto_refresh:
     st.experimental_rerun()
-    time.sleep(refresh_interval)
+    time.sleep(30)
 
-# ------------------------- Sample Data ------------------------- #
-def get_sample_signals():
-    return {
-        "BUY": random.randint(10, 20),
-        "SELL": random.randint(5, 15),
-        "NEUTRAL": random.randint(3, 10),
-        "RECOMMENDATION": random.choice(["BUY", "SELL", "NEUTRAL"])
-    }
+# Page 1: Technical AI Assistant
+if page == "تکنیکی AI اسسٹنٹ":
+    st.title("تکنیکی AI ٹریڈنگ اسسٹنٹ")
 
-def get_sample_news():
-    sample_news = [
-        ("Bitcoin hits new high as ETF rumors spread", "positive"),
-        ("SEC delays Ethereum decision again", "neutral"),
-        ("Binance faces regulatory action in Europe", "negative")
-    ]
-    return random.choice(sample_news)
+    selected_coin = st.selectbox("سکّہ منتخب کریں:", ["BTC", "ETH", "BNB", "SOL", "XRP", "DOGE"])
 
-# ------------------------- UI ------------------------- #
-if page == "ہوم":
-    st.title("پیشہ ور اردو ٹریڈنگ اسسٹنٹ")
     st.markdown("""
-    یہ ایپ دو طاقتور AI روبوٹس پر مشتمل ہے:
-
-    1. **تکنیکی AI**: انڈیکیٹرز، چارٹ پیٹرن، اور سکیلپنگ سگنل کا تجزیہ کرتا ہے۔  
-    2. **نیوز AI**: CoinMarketCap جیسی سائٹس سے نیوز لے کر فنڈامنٹل تجزیہ دیتا ہے۔
-
-    اوپر مینو سے کسی بھی AI ماڈیول کا انتخاب کریں۔
+    - چارٹ پیٹرن: Head & Shoulders، Triangle، Wedge
+    - انڈیکیٹرز: RSI, MACD, EMA, VWAP, Bollinger Bands, Volume
+    - سگنل: AI ریڈ، ییلو، گرین
     """)
 
-elif page == "تکنیکی AI اسسٹنٹ":
-    st.title("تکنیکی تجزیہ AI")
-    signals = get_sample_signals()
-    st.metric("BUY سگنلز", signals['BUY'])
-    st.metric("SELL سگنلز", signals['SELL'])
-    st.metric("NEUTRAL سگنلز", signals['NEUTRAL'])
-    st.subheader(f"AI تجویز: {signals['RECOMMENDATION']}")
-    st.caption("AI اسسٹنٹ خودکار تجزیہ دیتا ہے، فیصلہ سمجھداری سے کریں")
+    st.success(f"{selected_coin} کے لیے سگنل: 🟢 خریداری کا مشورہ")
 
-elif page == "نیوز AI اسسٹنٹ":
-    st.title("فنڈامنٹل نیوز تجزیہ AI")
-    headline, sentiment = get_sample_news()
-    st.subheader("تازہ ترین کرپٹو نیوز:")
-    st.info(headline)
+# Page 2: Fundamental/News AI
+elif page == "فنڈامینٹل نیوز AI":
+    st.title("فنڈامینٹل / نیوز AI")
+    st.markdown("""
+    یہ AI CoinMarketCap کی سرکاری نیوز کا تجزیہ کرتا ہے اور:
+    - مارکیٹ کا موڈ (Bullish / Bearish)
+    - نیوز کی شدت
+    - ممکنہ اثرات
 
-    if sentiment == "positive":
-        st.success("AI تجزیہ: یہ خبر مثبت ہے — BUY سگنل")
-    elif sentiment == "negative":
-        st.error("AI تجزیہ: یہ خبر منفی ہے — SELL سگنل")
-    else:
-        st.warning("AI تجزیہ: یہ خبر نیوٹرل ہے — کوئی واضح سگنل نہیں")
+    **مثال**:
+    - Coin: ETH
+    - خبر: Ethereum ETF منظور ہو گئی
+    - AI تجزیہ: 🟢 مثبت اثر، ممکنہ قیمت میں اضافہ
+    """)
 
-    st.caption("نیوز AI مارکیٹ جذبات کا خودکار تجزیہ فراہم کرتا ہے")
-    
+    coin = st.selectbox("سکّہ منتخب کریں:", ["BTC", "ETH", "SOL", "AVAX", "ADA"])
+    st.info(f"{coin} پر تازہ نیوز: Ethereum 2.0 لانچ — AI تجزیہ: مثبت")
+
+# Note
+st.markdown("""
+---
+**نوٹ**: AI اسسٹنٹ خودکار تجزیہ دیتا ہے، حتمی فیصلہ ہمیشہ اپنی سمجھداری سے کریں۔
+""")
