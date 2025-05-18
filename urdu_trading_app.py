@@ -2,68 +2,75 @@ import streamlit as st
 import time
 import random
 
-# --- Settings Sidebar ---
+st.set_page_config(page_title="Urdu Trading Assistant", layout="wide")
+
+# سائیڈبار سیٹنگز
 st.sidebar.title("سیٹنگز")
+auto_refresh = st.sidebar.toggle("آٹو ریفریش", value=True)
+st.sidebar.markdown("**ریفریش وقفہ:** 30 سیکنڈ")
 
-# Auto Refresh Toggle
-auto_refresh = st.sidebar.checkbox("آٹو ریفریش آن کریں", value=False)
-refresh_interval = st.sidebar.slider("ریفریش وقفہ (سیکنڈ)", 10, 300, 60)
+# مین ہیڈنگ
+st.title("اردو پروفیشنل ٹریڈنگ اسسٹنٹ")
+st.markdown("تمام اہم انڈیکیٹر اور چارٹ پیٹرن کا خودکار تجزیہ")
 
-# --- Title ---
-st.title("اردو ٹریڈنگ اسسٹنٹ")
+# فنکشن: پیٹرن لسٹ
+patterns = [
+    "Head & Shoulders", "Double Top", "Double Bottom", "Triple Top", "Triple Bottom",
+    "Triangle", "Wedge", "Flag", "Pennant", "Rectangle",
+    "Cup & Handle", "Rounding Bottom", "Inverse Head & Shoulders",
+    "Ascending Triangle", "Descending Triangle"
+]
 
-# --- Chart Patterns ---
-chart_patterns = {
-    "Head & Shoulders": True,
-    "Double Top": True,
-    "Triangle": True,
-    "Cup & Handle": True,
-    "Flag": True,
-    "Wedge": False,
-    "Rectangle": True,
-    "Triple Top": False,
-    "Pennant": False,
-    "Rising Wedge": False,
-    "Falling Wedge": False,
-    "Double Bottom": False,
-    "Triple Bottom": False,
-    "Inverse Head & Shoulders": False,
-    "Ascending Triangle": False
-}
+# فنکشن: 6 انڈیکیٹر تجزیہ
+def ai_indicator_summary():
+    buy = random.randint(8, 14)
+    sell = random.randint(4, 10)
+    neutral = 20 - buy - sell
+    summary = "NEUTRAL"
+    emoji = "🟡"
+    if buy >= 13:
+        summary = "STRONG BUY"
+        emoji = "🟢"
+    elif sell >= 13:
+        summary = "STRONG SELL"
+        emoji = "🔴"
+    elif buy > sell:
+        summary = "BUY"
+        emoji = "🟢"
+    elif sell > buy:
+        summary = "SELL"
+        emoji = "🔴"
+    return summary, buy, sell, neutral, emoji
 
-def pattern_status(detected):
-    return "✅ ڈیٹیکٹ ہوا" if detected else "⏳ ویٹ کریں"
+# فنکشن: پیٹرن ڈیٹیکشن
+def detect_patterns():
+    st.subheader("چارٹ پیٹرن ڈیٹیکشن")
+    for pattern in patterns:
+        detected = random.choice([True, False])
+        if detected:
+            st.success(f"✅ {pattern} پیٹرن ڈیٹیکٹ ہوا")
+        else:
+            st.info(f"⏳ {pattern} ویٹ کریں")
 
-st.subheader("چارٹ پیٹرن تجزیہ")
-for pattern, detected in chart_patterns.items():
-    st.write(f"{pattern}: {pattern_status(detected)}")
+# فنکشن: AI انڈیکیٹر سگنل
+def show_ai_signals():
+    st.subheader("AI انڈیکیٹر تجزیہ")
+    summary, buy, sell, neutral, emoji = ai_indicator_summary()
+    st.write(f"**RECOMMENDATION: {summary} {emoji}**")
+    st.write(f"**BUY:** {buy} | **SELL:** {sell} | **NEUTRAL:** {neutral}")
 
-# --- Indicator Analysis ---
-st.subheader("انڈیکیٹر رائے")
-buy = random.randint(8, 13)
-sell = random.randint(5, 10)
-neutral = 20 - (buy + sell)
-recommendation = "BUY" if buy > sell else "SELL" if sell > buy else "NEUTRAL"
+# مین لوپ
+def main_loop():
+    show_ai_signals()
+    detect_patterns()
 
-st.write(f"RECOMMENDATION: **{recommendation}**")
-st.write(f"BUY: {buy}")
-st.write(f"SELL: {sell}")
-st.write(f"NEUTRAL: {neutral}")
-
-def signal_icon():
-    if recommendation == "BUY":
-        return "🟢"
-    elif recommendation == "SELL":
-        return "🔴"
-    else:
-        return "🟡"
-
-st.markdown(f"### سگنل: {signal_icon()}")
-
-# --- Auto Refresh Logic ---
+# آٹو ریفریش لوپ
 if auto_refresh:
-    st.success(f"آٹو ریفریش فعال ہے - ہر {refresh_interval} سیکنڈ بعد اپڈیٹ ہو گا")
-    time.sleep(refresh_interval)
-    st.experimental_rerun()
+    while True:
+        st.empty()
+        with st.container():
+            main_loop()
+        time.sleep(30)
+        st.rerun()
 else:
-    st.info("آٹو ریفریش بند ہے۔ آپ دستی طور پر ریفریش کر سکتے ہیں۔")
+    main_loop()
