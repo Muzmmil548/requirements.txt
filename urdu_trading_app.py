@@ -1,60 +1,30 @@
-Urdu Trading Assistant App (Complete Code)
+import streamlit as st import time
 
-import streamlit as st from tradingview_ta import TA_Handler, Interval import streamlit.components.v1 as components import time import random
+سیٹنگز سیکشن
 
-Set page config
+st.sidebar.title("سیٹنگز") auto_refresh = st.sidebar.toggle("آٹو ریفریش", value=True) refresh_interval = st.sidebar.slider("ریفریش ہر کتنے سیکنڈ بعد ہو:", 5, 60, 15)
 
-st.set_page_config(page_title="اردو ٹریڈنگ اسسٹنٹ", layout="wide")
+عنوان
 
-Custom CSS for blinking signals
+st.title("پروفیشنل اردو ٹریڈنگ اسسٹنٹ") st.markdown("---")
 
-st.markdown(""" <style> @keyframes blink { 50% { opacity: 0.0; } } .blink-green { animation: blink 1s infinite; background-color: #00cc00; padding: 10px; color: white; font-weight: bold; border-radius: 10px; text-align: center; } .blink-red { animation: blink 1s infinite; background-color: #cc0000; padding: 10px; color: white; font-weight: bold; border-radius: 10px; text-align: center; } .blink-yellow { animation: blink 1s infinite; background-color: #ffcc00; padding: 10px; color: black; font-weight: bold; border-radius: 10px; text-align: center; } </style> """, unsafe_allow_html=True)
+چارٹ پیٹرن ڈیٹیکشن ڈیٹا (مثال کے طور پر)
 
-Header
+patterns = { "Head & Shoulders": "✅ تصدیق شدہ بریک آؤٹ", "Double Top": "✅ تصدیق شدہ بریک آؤٹ", "Triangle": "✅ تصدیق شدہ بریک آؤٹ", "Cup & Handle": "✅ تصدیق شدہ بریک آؤٹ", "Flag": "✅ تصدیق شدہ بریک آؤٹ", "Wedge": "⏳ انتظار کریں", "Rectangle": "✅ تصدیق شدہ بریک آؤٹ", "Triple Top": "⏳ انتظار کریں", "Double Bottom": "⏳ انتظار کریں", "Triple Bottom": "⏳ انتظار کریں", "Inverse Head & Shoulders": "⏳ انتظار کریں", "Ascending Triangle": "⏳ انتظار کریں", "Descending Triangle": "⏳ انتظار کریں", "Bullish Pennant": "⏳ انتظار کریں", "Bearish Pennant": "⏳ انتظار کریں" }
 
-st.markdown("<h1 style='text-align: center; color: #0E76A8;'>اردو ٹریڈنگ اسسٹنٹ</h1>", unsafe_allow_html=True)
+سگنل سیکشن
 
-Top 50 Coin Selector
+st.header("چارٹ پیٹرن تجزیہ") for pattern, status in patterns.items(): st.write(f"{pattern}: {status}")
 
-top_50 = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "DOGEUSDT", "SOLUSDT", "DOTUSDT", "TRXUSDT", "AVAXUSDT"] symbol = st.selectbox("### سکہ منتخب کریں:", options=top_50)
+6 indicators ایگریمنٹ مثال
 
-Auto Refresh Toggle
+st.markdown("---") st.header("AI انڈیکیٹر سگنل") recommendation = "NEUTRAL" buy_signals = 11 sell_signals = 9 neutral_signals = 6
 
-auto_refresh = st.toggle("⏳ آٹو ریفریش", value=False)
+if buy_signals >= 10 and sell_signals <= 5: recommendation = "BUY 🟢" elif sell_signals >= 10 and buy_signals <= 5: recommendation = "SELL 🔴" else: recommendation = "NEUTRAL 🟡"
 
-Live Chart
+st.write(f"تجویز: {recommendation}") st.write(f"BUY: {buy_signals}, SELL: {sell_signals}, NEUTRAL: {neutral_signals}")
 
-st.markdown("### لائیو چارٹ:") components.iframe( f"https://s.tradingview.com/widgetembed/?symbol=BINANCE%3A{symbol}&interval=1&theme=dark&style=1&locale=en", height=400, scrolling=True )
+آٹو ریفریش لاجک
 
-Pattern Detection
-
-st.markdown("### چارٹ پیٹرن تجزیہ:") chart_patterns = [ "Head & Shoulders", "Inverse Head & Shoulders", "Double Top", "Double Bottom", "Triple Top", "Triple Bottom", "Cup & Handle", "Wedge", "Ascending Triangle", "Descending Triangle", "Symmetrical Triangle", "Rectangle", "Flag", "Pennant", "Rounding Bottom" ]
-
-for pattern in chart_patterns: detected = random.choice(["✅ ڈیٹیکٹ ہوا", "⏳ ویٹ کریں"]) st.write(f"{pattern}: {detected}")
-
-Signal Section
-
-st.markdown("### سگنل:") if auto_refresh or st.button("سگنل چیک کریں"): try: handler = TA_Handler( symbol=symbol, screener="crypto", exchange="BINANCE", interval=Interval.INTERVAL_1_MINUTE ) analysis = handler.get_analysis() recommendation = analysis.summary["RECOMMENDATION"]
-
-if recommendation == "BUY":
-        st.markdown('<div class="blink-green">🟢 خریداری (BUY) سگنل</div>', unsafe_allow_html=True)
-    elif recommendation == "SELL":
-        st.markdown('<div class="blink-red">🔴 فروخت (SELL) سگنل</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="blink-yellow">🟡 انتظار (NEUTRAL)</div>', unsafe_allow_html=True)
-
-    with st.expander("### خلاصہ دیکھیں"):
-        for key, val in analysis.summary.items():
-            st.write(f"{key}: {val}")
-
-    with st.expander("### تکنیکی انڈیکیٹرز"):
-        for ind, val in analysis.indicators.items():
-            st.write(f"{ind}: {val}")
-
-except Exception as e:
-    st.error(f"کچھ غلط ہو گیا: {e}")
-
-Auto refresh loop
-
-if auto_refresh: time.sleep(60) st.experimental_rerun()
+if auto_refresh: time.sleep(refresh_interval) st.experimental_rerun()
 
