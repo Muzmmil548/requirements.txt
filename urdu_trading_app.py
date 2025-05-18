@@ -1,19 +1,19 @@
 import streamlit as st
-import time
 import random
+from streamlit_autorefresh import st_autorefresh
+
+# آٹو ریفریش ہر 30 سیکنڈ بعد
+st_autorefresh(interval=30 * 1000, key="refresh")
 
 st.set_page_config(page_title="Urdu Trading Assistant", layout="wide")
 
-# سائیڈبار سیٹنگز
+# سائیڈبار
 st.sidebar.title("سیٹنگز")
-auto_refresh = st.sidebar.toggle("آٹو ریفریش", value=True)
-st.sidebar.markdown("**ریفریش وقفہ:** 30 سیکنڈ")
+st.sidebar.write("یہ صفحہ ہر 30 سیکنڈ میں خود ریفریش ہو گا۔")
 
-# مین ہیڈنگ
 st.title("اردو پروفیشنل ٹریڈنگ اسسٹنٹ")
 st.markdown("تمام اہم انڈیکیٹر اور چارٹ پیٹرن کا خودکار تجزیہ")
 
-# فنکشن: پیٹرن لسٹ
 patterns = [
     "Head & Shoulders", "Double Top", "Double Bottom", "Triple Top", "Triple Bottom",
     "Triangle", "Wedge", "Flag", "Pennant", "Rectangle",
@@ -21,7 +21,6 @@ patterns = [
     "Ascending Triangle", "Descending Triangle"
 ]
 
-# فنکشن: 6 انڈیکیٹر تجزیہ
 def ai_indicator_summary():
     buy = random.randint(8, 14)
     sell = random.randint(4, 10)
@@ -42,9 +41,8 @@ def ai_indicator_summary():
         emoji = "🔴"
     return summary, buy, sell, neutral, emoji
 
-# فنکشن: پیٹرن ڈیٹیکشن
 def detect_patterns():
-    st.subheader("چارٹ پیٹرن ڈیٹیکشن")
+    st.subheader("پیٹرن تجزیہ:")
     for pattern in patterns:
         detected = random.choice([True, False])
         if detected:
@@ -52,25 +50,11 @@ def detect_patterns():
         else:
             st.info(f"⏳ {pattern} ویٹ کریں")
 
-# فنکشن: AI انڈیکیٹر سگنل
 def show_ai_signals():
-    st.subheader("AI انڈیکیٹر تجزیہ")
+    st.subheader("سگنل:")
     summary, buy, sell, neutral, emoji = ai_indicator_summary()
     st.write(f"**RECOMMENDATION: {summary} {emoji}**")
     st.write(f"**BUY:** {buy} | **SELL:** {sell} | **NEUTRAL:** {neutral}")
 
-# مین لوپ
-def main_loop():
-    show_ai_signals()
-    detect_patterns()
-
-# آٹو ریفریش لوپ
-if auto_refresh:
-    while True:
-        st.empty()
-        with st.container():
-            main_loop()
-        time.sleep(30)
-        st.rerun()
-else:
-    main_loop()
+show_ai_signals()
+detect_patterns()
