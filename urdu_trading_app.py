@@ -1,30 +1,70 @@
-import streamlit as st import time
+import streamlit as st
+import time
+import random
 
-سیٹنگز سیکشن
+# سیٹنگز
+st.sidebar.title("سیٹنگز")
+auto_refresh = st.sidebar.toggle("آٹو ریفریش", value=True)
+refresh_interval = st.sidebar.slider("ریفریش وقفہ (سیکنڈ)", 10, 300, 60)
 
-st.sidebar.title("سیٹنگز") auto_refresh = st.sidebar.toggle("آٹو ریفریش", value=True) refresh_interval = st.sidebar.slider("ریفریش ہر کتنے سیکنڈ بعد ہو:", 5, 60, 15)
+# ہیڈر
+st.title("اردو ٹریڈنگ اسسٹنٹ")
 
-عنوان
+# چارٹ پیٹرن مثالیں
+chart_patterns = {
+    "Head & Shoulders": True,
+    "Double Top": True,
+    "Triangle": True,
+    "Cup & Handle": True,
+    "Flag": True,
+    "Wedge": False,
+    "Rectangle": True,
+    "Triple Top": False,
+    "Pennant": False,
+    "Rising Wedge": False,
+    "Falling Wedge": False,
+    "Double Bottom": False,
+    "Triple Bottom": False,
+    "Inverse Head & Shoulders": False,
+    "Ascending Triangle": False
+}
 
-st.title("پروفیشنل اردو ٹریڈنگ اسسٹنٹ") st.markdown("---")
+# سگنلز کا رنگ
+def pattern_status(detected):
+    return "✅ ڈیٹیکٹ ہوا" if detected else "⏳ ویٹ کریں"
 
-چارٹ پیٹرن ڈیٹیکشن ڈیٹا (مثال کے طور پر)
+# پیٹرن لسٹ دکھائیں
+st.subheader("چارٹ پیٹرن تجزیہ")
+for pattern, detected in chart_patterns.items():
+    st.write(f"{pattern}: {pattern_status(detected)}")
 
-patterns = { "Head & Shoulders": "✅ تصدیق شدہ بریک آؤٹ", "Double Top": "✅ تصدیق شدہ بریک آؤٹ", "Triangle": "✅ تصدیق شدہ بریک آؤٹ", "Cup & Handle": "✅ تصدیق شدہ بریک آؤٹ", "Flag": "✅ تصدیق شدہ بریک آؤٹ", "Wedge": "⏳ انتظار کریں", "Rectangle": "✅ تصدیق شدہ بریک آؤٹ", "Triple Top": "⏳ انتظار کریں", "Double Bottom": "⏳ انتظار کریں", "Triple Bottom": "⏳ انتظار کریں", "Inverse Head & Shoulders": "⏳ انتظار کریں", "Ascending Triangle": "⏳ انتظار کریں", "Descending Triangle": "⏳ انتظار کریں", "Bullish Pennant": "⏳ انتظار کریں", "Bearish Pennant": "⏳ انتظار کریں" }
+# انڈیکیٹر سگنلز (مثال کے طور پر)
+st.subheader("انڈیکیٹر رائے")
+buy = random.randint(8, 13)
+sell = random.randint(5, 10)
+neutral = 20 - (buy + sell)
+recommendation = "BUY" if buy > sell else "SELL" if sell > buy else "NEUTRAL"
 
-سگنل سیکشن
+st.write(f"RECOMMENDATION: **{recommendation}**")
+st.write(f"BUY: {buy}")
+st.write(f"SELL: {sell}")
+st.write(f"NEUTRAL: {neutral}")
 
-st.header("چارٹ پیٹرن تجزیہ") for pattern, status in patterns.items(): st.write(f"{pattern}: {status}")
+# سگنل آئیکن
+def signal_icon():
+    if recommendation == "BUY":
+        return "🟢"
+    elif recommendation == "SELL":
+        return "🔴"
+    else:
+        return "🟡"
 
-6 indicators ایگریمنٹ مثال
+st.markdown(f"### سگنل: {signal_icon()}")
 
-st.markdown("---") st.header("AI انڈیکیٹر سگنل") recommendation = "NEUTRAL" buy_signals = 11 sell_signals = 9 neutral_signals = 6
-
-if buy_signals >= 10 and sell_signals <= 5: recommendation = "BUY 🟢" elif sell_signals >= 10 and buy_signals <= 5: recommendation = "SELL 🔴" else: recommendation = "NEUTRAL 🟡"
-
-st.write(f"تجویز: {recommendation}") st.write(f"BUY: {buy_signals}, SELL: {sell_signals}, NEUTRAL: {neutral_signals}")
-
-آٹو ریفریش لاجک
-
-if auto_refresh: time.sleep(refresh_interval) st.experimental_rerun()
-
+# آٹو ریفریش فنکشن
+if auto_refresh:
+    st.caption(f"یہ پیج ہر {refresh_interval} سیکنڈ بعد خود ریفریش ہو گا۔")
+    time.sleep(refresh_interval)
+    st.experimental_rerun()
+else:
+    st.caption("آٹو ریفریش بند ہے۔")
