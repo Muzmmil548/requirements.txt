@@ -1,64 +1,46 @@
 import streamlit as st
 import time
+import pandas as pd
 
-# Sidebar navigation
-st.sidebar.title("نیویگیشن")
-page = st.sidebar.radio("صفحہ منتخب کریں:", [
-    "تکنیکی AI اسسٹنٹ",
-    "فنڈامینٹل نیوز AI",
-    "سیٹنگز (آٹو ریفریش)"
-])
+st.set_page_config(page_title="اردو AI ٹریڈنگ اسسٹنٹ", layout="wide")
 
-# Auto Refresh Toggle
-if "auto_refresh" not in st.session_state:
-    st.session_state.auto_refresh = True
+# آٹو ریفریش بٹن
+st.sidebar.title("سیٹنگز")
+auto_refresh = st.sidebar.toggle("آٹو ریفریش", value=True)
+refresh_interval = 30  # سیکنڈز
 
-if page == "سیٹنگز (آٹو ریفریش)":
-    st.title("آٹو ریفریش سیٹنگز")
-    auto = st.toggle("ہر 30 سیکنڈ بعد خودکار ریفریش", value=st.session_state.auto_refresh)
-    st.session_state.auto_refresh = auto
-    st.success("سیٹنگ محفوظ ہو گئی ہے")
-    st.stop()
+# ریفریش لاجک
+if auto_refresh:
+    time.sleep(refresh_interval)
+    st.rerun()
 
-# Auto refresh every 30 seconds if enabled
-if st.session_state.auto_refresh:
-    st.experimental_rerun()
-    time.sleep(30)
+# سائیڈ بار: کوئن سلیکشن
+st.sidebar.title("سلیکٹ کریں")
+coins = st.sidebar.multiselect("کوئنز منتخب کریں", [
+    "BTC", "ETH", "BNB", "SOL", "XRP", "DOGE", "ADA", "DOT", "MATIC", "AVAX"
+], default=["BTC", "ETH", "BNB"])
 
-# Page 1: Technical AI Assistant
-if page == "تکنیکی AI اسسٹنٹ":
-    st.title("تکنیکی AI ٹریڈنگ اسسٹنٹ")
+# مین ایریا ٹیبز
+tab1, tab2 = st.tabs(["📊 AI ٹریڈنگ سگنلز", "🧠 چارٹ پیٹرن ڈیٹیکشن"])
 
-    selected_coin = st.selectbox("سکّہ منتخب کریں:", ["BTC", "ETH", "BNB", "SOL", "XRP", "DOGE"])
+# ---- ٹیب 1: انڈیکیٹر AI ----
+with tab1:
+    st.subheader("AI انڈیکیٹر پر مبنی سگنلز")
+    for coin in coins:
+        st.markdown(f"### {coin}")
+        st.success("خریدنے کا سگنل (Buy)")  # صرف ڈیمو کے لیے
+        st.info("انڈیکیٹر: RSI, MACD, Bollinger Bands, MA, Stochastic, EMA")
+        st.caption("AI اسسٹنٹ خودکار تجزیہ دیتا ہے، فیصلہ سمجھداری سے کریں")
 
-    st.markdown("""
-    - چارٹ پیٹرن: Head & Shoulders، Triangle، Wedge
-    - انڈیکیٹرز: RSI, MACD, EMA, VWAP, Bollinger Bands, Volume
-    - سگنل: AI ریڈ، ییلو، گرین
-    """)
+# ---- ٹیب 2: چارٹ پیٹرن AI ----
+with tab2:
+    st.subheader("AI چارٹ پیٹرن ڈیٹیکشن")
+    for coin in coins:
+        st.markdown(f"### {coin}")
+        st.warning("چارٹ پیٹرن: Head & Shoulders ڈیٹیکٹ ہوا")
+        st.caption("بریک آؤٹ کنفرمیشن کے لیے ویری فکیشن ضروری ہے")
 
-    st.success(f"{selected_coin} کے لیے سگنل: 🟢 خریداری کا مشورہ")
-
-# Page 2: Fundamental/News AI
-elif page == "فنڈامینٹل نیوز AI":
-    st.title("فنڈامینٹل / نیوز AI")
-    st.markdown("""
-    یہ AI CoinMarketCap کی سرکاری نیوز کا تجزیہ کرتا ہے اور:
-    - مارکیٹ کا موڈ (Bullish / Bearish)
-    - نیوز کی شدت
-    - ممکنہ اثرات
-
-    **مثال**:
-    - Coin: ETH
-    - خبر: Ethereum ETF منظور ہو گئی
-    - AI تجزیہ: 🟢 مثبت اثر، ممکنہ قیمت میں اضافہ
-    """)
-
-    coin = st.selectbox("سکّہ منتخب کریں:", ["BTC", "ETH", "SOL", "AVAX", "ADA"])
-    st.info(f"{coin} پر تازہ نیوز: Ethereum 2.0 لانچ — AI تجزیہ: مثبت")
-
-# Note
-st.markdown("""
----
-**نوٹ**: AI اسسٹنٹ خودکار تجزیہ دیتا ہے، حتمی فیصلہ ہمیشہ اپنی سمجھداری سے کریں۔
-""")
+# فوٹر
+st.markdown("---")
+st.markdown("**نوٹ:** یہ ایپ AI کی مدد سے تجزیہ کرتی ہے، حتمی فیصلہ آپ کا اپنا ہوگا۔")
+        
