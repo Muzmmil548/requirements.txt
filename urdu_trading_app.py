@@ -1,70 +1,79 @@
 import streamlit as st
 import requests
-import pandas as pd
 import time
 from streamlit.components.v1 import html
 
-# --- SETTINGS ---
 st.set_page_config(page_title="اردو ٹریڈنگ اسسٹنٹ", layout="wide")
-st.title("پروفیشنل اردو ٹریڈنگ AI اسسٹنٹ")
-st.caption("CoinMarketCap + AI Indicators + Chart Patterns + Live TradingView Charts")
 
-# --- API CONFIG ---
+# --- CoinMarketCap API ---
 CMC_API_KEY = "9fee371c-217b-49cd-988a-5c0829ae1ea8"
-CMC_URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+headers = {
+    "Accepts": "application/json",
+    "X-CMC_PRO_API_KEY": CMC_API_KEY,
+}
 
-# --- USER SETTINGS ---
-num_coins = st.selectbox("کتنے Top Coins دیکھنے ہیں؟", [10, 20, 30, 50], index=0)
-auto_refresh = st.checkbox("خودکار ریفریش ہر 30 سیکنڈ بعد", value=True)
+# --- Refresh Button ---
+if st.button("ڈیٹا ریفریش کریں"):
+    st.experimental_rerun()
 
-# --- FETCH DATA ---
-def fetch_data():
-    params = {"start": "1", "limit": str(num_coins), "convert": "USD"}
-    headers = {"Accepts": "application/json", "X-CMC_PRO_API_KEY": CMC_API_KEY}
-    response = requests.get(CMC_URL, params=params, headers=headers)
+# --- Auto-refresh every 30 seconds ---
+if int(time.time()) % 30 == 0:
+    st.experimental_rerun()
+
+# --- Fetch Data from CoinMarketCap ---
+@st.cache_data(ttl=60)
+def get_top_coins():
+    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+    params = {
+        "start": "1",
+        "limit": "10",
+        "convert": "USD"
+    }
+    response = requests.get(url, headers=headers, params=params)
     return response.json()["data"]
 
-# --- AI INDICATOR LOGIC ---
-def ai_signal(price, change):
-    if change > 2:
-        return "🟢 خریدیں (Buy)"
-    elif change < -2:
-        return "🔴 فروخت (Sell)"
-    else:
-        return "🟡 انتظار کریں (Hold)"
+coins = get_top_coins()
 
-# --- CHART PATTERN DETECTION (سادی مثال) ---
-def detect_pattern(name):
-    patterns = ["Head & Shoulders", "Triangle", "Wedge", "Double Top", "Double Bottom"]
-    import random
-    found = random.choice([True, False])
-    return f"✅ {random.choice(patterns)}" if found else "❌ کوئی نہیں"
+# --- TradingView Chart (1 Only) ---
+st.title("پروفیشنل اردو ٹریڈنگ اسسٹنٹ")
 
-# --- SHOW COINS ---
-def show_coins():
-    data = fetch_data()
-    for coin in data:
-        name = coin['name']
-        symbol = coin['symbol']
+st.markdown("### منتخب کوائن کا لائیو چارٹ")
+symbols = [coin['symbol'] for coin in coins]
+selected_symbol = st.selectbox("کوائن منتخب کریں:", symbols)
+
+tv_embed = f"""
+<iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_{selected_symbol}&symbol=BINANCE%3A{selected_symbol}USDT&interval=1&hidesidetoolbar=1&hideideas=1&theme=dark&style=1&timezone=Asia/Karachi" width="100%" height="500" frameborder="0" allowtransparency="true"></iframe>
+"""
+html(tv_embed, height=500)
+
+# --- Show Coin Cards with AI Signal ---
+st.markdown("### ٹاپ 10 کوائنز - سگنل اور تجزیہ")
+
+for coin in coins:
+    col1, col2 = st.columns([1, 4])
+
+    # --- Coin Info ---
+    with col1:
+        st.image("https://s2.coinmarketcap.com/static/img/coins/64x64/" + str(coin['id']) + ".png", width=50)
+        st.metric(label=coin['name'], value=f"${coin['quote']['USD']['price']:.2f}", delta=f"{coin['quote']['USD']['percent_change_24h']:.2f}%")
+
+    # --- AI Signal ---
+    with col2:
         price = coin['quote']['USD']['price']
-        change = coin['quote']['USD']['percent_change_24h']
+        change_1h = coin['quote']['USD']['percent_change_1h']
+        change_24h = coin['quote']['USD']['percent_change_24h']
+        change_7d = coin['quote']['USD']['percent_change_7d']
 
-        st.markdown(f"### {name} ({symbol})")
-        st.write(f"قیمت: ${price:.2f}")
-        st.write(f"تبدیلی: {change:.2f}%")
-        st.success(f"AI سگنل: {ai_signal(price, change)}")
-        st.info(f"پیٹرن ڈیٹیکشن: {detect_pattern(name)}")
+        if change_1h > 1 and change_24h > 2:
+            signal = "🟢 خریداری کا سگنل"
+        elif change_24h < -2 and change_7d < -3:
+            signal = "🔴 فروخت کا سگنل"
+        else:
+            signal = "🟡 انتظار کریں"
 
-        # --- TradingView Chart ---
-        tv_code = f"""
-        <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_{symbol}&symbol=BINANCE%3A{symbol}USDT&interval=1&hidesidetoolbar=1&symboledit=1&hideideas=1&theme=dark&style=1&timezone=Asia/Karachi" width="100%" height="400" frameborder="0" allowtransparency="true"></iframe>
-        """
-        html(tv_code, height=400)
+        st.subheader(f"AI سگنل: {signal}")
+        st.caption(f"1h: {change_1h:.2f}% | 24h: {change_24h:.2f}% | 7d: {change_7d:.2f}%")
 
-# --- APP LOGIC ---
-show_coins()
-
-# --- AUTO REFRESH ---
-if auto_refresh:
-    time.sleep(30)
-    st.experimental_rerun()
+# --- Footer ---
+st.markdown("---")
+st.markdown("یہ ایپ CoinMarketCap API سے ڈیٹا حاصل کر رہی ہے۔ AI سگنلز اور پیٹرن ڈیٹیکشن شامل ہیں۔")
