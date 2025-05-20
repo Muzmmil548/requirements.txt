@@ -1,9 +1,13 @@
 import streamlit as st
 import requests
-import time
 from streamlit.components.v1 import html
+from streamlit_autorefresh import st_autorefresh
 
+# --- Page Config ---
 st.set_page_config(page_title="اردو ٹریڈنگ اسسٹنٹ", layout="wide")
+
+# --- Auto Refresh every 30 seconds ---
+st_autorefresh(interval=30 * 1000, key="auto-refresh")
 
 # --- CoinMarketCap API ---
 CMC_API_KEY = "9fee371c-217b-49cd-988a-5c0829ae1ea8"
@@ -14,10 +18,6 @@ headers = {
 
 # --- Refresh Button ---
 if st.button("ڈیٹا ریفریش کریں"):
-    st.experimental_rerun()
-
-# --- Auto-refresh every 30 seconds ---
-if int(time.time()) % 30 == 0:
     st.experimental_rerun()
 
 # --- Fetch Data from CoinMarketCap ---
@@ -34,7 +34,7 @@ def get_top_coins():
 
 coins = get_top_coins()
 
-# --- TradingView Chart (1 Only) ---
+# --- TradingView Chart (Only 1, on top) ---
 st.title("پروفیشنل اردو ٹریڈنگ اسسٹنٹ")
 
 st.markdown("### منتخب کوائن کا لائیو چارٹ")
@@ -47,7 +47,7 @@ tv_embed = f"""
 html(tv_embed, height=500)
 
 # --- Show Coin Cards with AI Signal ---
-st.markdown("### ٹاپ 10 کوائنز - سگنل اور تجزیہ")
+st.markdown("### ٹاپ 10 کوائنز - AI سگنل اور تجزیہ")
 
 for coin in coins:
     col1, col2 = st.columns([1, 4])
