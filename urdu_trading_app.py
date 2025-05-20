@@ -1,86 +1,84 @@
-# Urdu Trading Assistant App with GPT-4-Turbo + HuggingFace fallback
 import streamlit as st
-import time
 import requests
+import pandas as pd
+import numpy as np
 
-# Sidebar toggle for auto-refresh
-auto_refresh = st.sidebar.toggle("آٹو ریفریش", value=True)
-refresh_interval = 30  # seconds
+# --- Sidebar ---
+st.sidebar.title("کوائن سیلیکشن")
+top_n = st.sidebar.selectbox("ٹاپ کتنے کوائنز دیکھنا چاہتے ہیں؟", [10, 50])
 
-# Set OpenAI and HuggingFace tokens (store in secrets)
-OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
-HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
-HF_API_KEY = st.secrets.get("HF_API_KEY", "")
+st.title("AI اسسٹنٹ - اردو ٹریڈنگ تجزیہ")
 
-# Fallback AI function using HuggingFace
-def ai_fallback_response(prompt):
-    headers = {"Authorization": f"Bearer {HF_API_KEY}"}
-    payload = {"inputs": prompt}
-    response = requests.post(HF_API_URL, headers=headers, json=payload)
-    if response.status_code == 200:
-        return response.json()[0].get("generated_text", "کوئی جواب نہیں ملا")
-    return "فالو بیک ناکام ہوا"
+# --- Get Market Data from CoinGecko ---
+@st.cache_data(ttl=60)
+def get_coin_data(limit=10):
+    url = f"https://api.coingecko.com/api/v3/coins/markets"
+    params = {
+        "vs_currency": "usd",
+        "order": "market_cap_desc",
+        "per_page": limit,
+        "page": 1,
+        "sparkline": True
+    }
+    response = requests.get(url, params=params)
+    return response.json()
 
-# OpenAI GPT-4-Turbo response
-@st.cache_data(show_spinner=False)
-def get_gpt4_response(prompt):
-    try:
-        from openai import OpenAI
-        openai.api_key = OPENAI_API_KEY
-        client = OpenAI(api_key=OPENAI_API_KEY)
-        response = client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[
-                {"role": "system", "content": "آپ ایک ماہر ٹریڈنگ اسسٹنٹ ہیں جو اردو میں تجزیہ کرتے ہیں۔"},
-                {"role": "user", "content": prompt},
-            ]
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return ai_fallback_response(prompt)
+# --- Simple AI Signal Logic ---
+def analyze_coin(coin):
+    price = coin['current_price']
+    change = coin['price_change_percentage_24h']
+    volume = coin['total_volume']
 
-# Sidebar Tabs for AI Sections
-st.sidebar.title("AI روبوٹ")
-ai_mode = st.sidebar.radio("ایک آپشن منتخب کریں:", ("AI سگنل اسسٹنٹ", "فنڈامینٹل نیوز تجزیہ"))
+    if change is None:
+        return "رکیں", "پیلا"
 
-st.title("پروفیشنل اردو ٹریڈنگ اسسٹنٹ")
-st.markdown("---")
+    if change > 3 and volume > 1_000_000:
+        return "خریدیں", "سبز"
+    elif change < -3 and volume > 1_000_000:
+        return "بیچیں", "سرخ"
+    else:
+        return "رکیں", "پیلا"
 
-# Home Panel
-st.header("لائیو مارکیٹ انڈیکیٹرز اور AI تجزیہ")
-st.markdown("**براہ کرم ایک کوائن منتخب کریں اور AI اسسٹنٹ کے تجزیہ کا انتظار کریں۔**")
+# --- Chart Pattern Detection (Head & Shoulders - simplified mock) ---
+def detect_head_shoulders(sparkline):
+    prices = np.array(sparkline)
+    if len(prices) < 7:
+        return False
 
-# Select Coin Dropdown
-coins = ["BTC", "ETH", "BNB", "SOL", "XRP"]
-selected_coin = st.selectbox("کوائن منتخب کریں:", coins)
+    left = prices[1]
+    head = prices[3]
+    right = prices[5]
 
-# User trigger prompt
-if ai_mode == "AI سگنل اسسٹنٹ":
-    prompt = f"{selected_coin} کے لیے مختصر اسکیلپنگ سگنل دو، صرف بائے، سیل یا ویٹ میں جواب دو۔"
-elif ai_mode == "فنڈامینٹل نیوز تجزیہ":
-    prompt = f"{selected_coin} کے لیے حالیہ خبریں اور فنڈامینٹل انیلیسس فراہم کریں، اردو میں۔"
-else:
-    prompt = "کسی بھی کرپٹو کوائن کے بارے میں تجزیہ کریں۔"
+    # Simplified condition
+    if head > left and head > right and abs(left - right)/head < 0.1:
+        return True
+    return False
 
-if st.button("AI تجزیہ حاصل کریں"):
-    with st.spinner("AI سے جواب حاصل کیا جا رہا ہے..."):
-        ai_result = get_gpt4_response(prompt)
-        st.success("تجزیہ مکمل")
-        st.write(ai_result)
+# --- Main App ---
+data = get_coin_data(top_n)
 
-# TradingView Chart (Optional)
-st.markdown("---")
-st.markdown("### لائیو ٹریڈنگ ویو چارٹ")
-selected_symbol = st.selectbox("چارٹ منتخب کریں:", ["BINANCE:BTCUSDT", "BINANCE:ETHUSDT"])
-st.components.v1.html(f"""
-    <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_b15b7&symbol={selected_symbol}&interval=1&theme=dark" 
-    width="100%" height="500" frameborder="0"></iframe>
-""", height=500)
+st.markdown("### تجزیہ: AI سگنلز اور پیٹرن ڈیٹیکشن")
 
-# Auto-refresh logic
-if auto_refresh:
-    time.sleep(refresh_interval)
-    st.experimental_rerun()
+for coin in data:
+    name = coin['name']
+    symbol = coin['symbol'].upper()
+    price = coin['current_price']
+    change = coin['price_change_percentage_24h']
+    sparkline = coin['sparkline_in_7d']['price']
+    
+    signal_urdu, color = analyze_coin(coin)
+    pattern_detected = detect_head_shoulders(sparkline)
 
-st.markdown("---")
-st.info("AI اسسٹنٹ خودکار تجزیہ دیتا ہے، فیصلہ سمجھداری سے کریں")
+    pattern_text = "🟢 Head & Shoulders پیٹرن ملا" if pattern_detected else "❌ کوئی خاص پیٹرن نہیں"
+
+    st.markdown(
+        f"""
+        <div style='border:1px solid #ccc; border-radius:10px; padding:10px; margin:10px 0; background-color:#f8f8f8'>
+            <b>{name} ({symbol})</b><br>
+            قیمت: ${price:,} <br>
+            24 گھنٹے تبدیلی: {change:.2f}% <br>
+            <span style='color:{color}; font-weight:bold;'>سگنل: {signal_urdu}</span><br>
+            <span style='font-size: 16px;'>{pattern_text}</span>
+        </div>
+        """, unsafe_allow_html=True
+    )
