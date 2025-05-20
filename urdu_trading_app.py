@@ -49,6 +49,15 @@ def ai_signal(coin):
     else:
         return "🟡 انتظار کریں"
 
+# Function to embed TradingView widget
+def tradingview_widget(symbol):
+    base = symbol.upper()
+    widget_code = f"""
+    <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_{base}&symbol=BINANCE%3A{base}USDT&interval=15&theme=dark&style=1&locale=en" 
+    width="100%" height="300" frameborder="0" allowtransparency="true" scrolling="no"></iframe>
+    """
+    return widget_code
+
 # Main execution
 coins = fetch_top_coins(top_n)
 
@@ -77,3 +86,6 @@ else:
                     pattern = detect_pattern(sparkline)
                     if pattern:
                         st.success(f"پیٹرن ڈیٹیکٹ ہوا: {pattern}")
+
+            # TradingView chart below both columns
+            st.components.v1.html(tradingview_widget(coin["symbol"]), height=320)
