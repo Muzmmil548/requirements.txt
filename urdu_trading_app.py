@@ -1,84 +1,79 @@
 import streamlit as st
 import requests
 import pandas as pd
-import numpy as np
 
-# --- Sidebar ---
-st.sidebar.title("کوائن سیلیکشن")
-top_n = st.sidebar.selectbox("ٹاپ کتنے کوائنز دیکھنا چاہتے ہیں؟", [10, 50])
+st.set_page_config(layout="wide")
+st.title("پروفیشنل اردو ٹریڈنگ اسسٹنٹ")
 
-st.title("AI اسسٹنٹ - اردو ٹریڈنگ تجزیہ")
+# Sidebar Options
+st.sidebar.header("تجزیہ اختیارات")
+top_n = st.sidebar.selectbox("سرفہرست سکے منتخب کریں", [10, 50], index=0)
+pattern_detect = st.sidebar.checkbox("پیٹرن ڈیٹیکشن آن کریں؟", value=True)
 
-# --- Get Market Data from CoinGecko ---
-@st.cache_data(ttl=60)
-def get_coin_data(limit=10):
+# Function to fetch top coins
+def fetch_top_coins(n=10):
     url = f"https://api.coingecko.com/api/v3/coins/markets"
     params = {
         "vs_currency": "usd",
         "order": "market_cap_desc",
-        "per_page": limit,
+        "per_page": n,
         "page": 1,
-        "sparkline": True
+        "sparkline": True,
+        "price_change_percentage": "1h,24h,7d"
     }
     response = requests.get(url, params=params)
-    return response.json()
-
-# --- Simple AI Signal Logic ---
-def analyze_coin(coin):
-    price = coin['current_price']
-    change = coin['price_change_percentage_24h']
-    volume = coin['total_volume']
-
-    if change is None:
-        return "رکیں", "پیلا"
-
-    if change > 3 and volume > 1_000_000:
-        return "خریدیں", "سبز"
-    elif change < -3 and volume > 1_000_000:
-        return "بیچیں", "سرخ"
+    if response.status_code == 200:
+        return response.json()
     else:
-        return "رکیں", "پیلا"
+        return []
 
-# --- Chart Pattern Detection (Head & Shoulders - simplified mock) ---
-def detect_head_shoulders(sparkline):
-    prices = np.array(sparkline)
+# Function to detect simple pattern (placeholder)
+def detect_pattern(prices):
     if len(prices) < 7:
-        return False
+        return ""
+    mid = len(prices) // 2
+    if prices[0] < prices[mid] and prices[-1] < prices[mid]:
+        return "Head & Shoulders"
+    return ""
 
-    left = prices[1]
-    head = prices[3]
-    right = prices[5]
+# AI signal function (basic version)
+def ai_signal(coin):
+    change_1h = coin.get("price_change_percentage_1h_in_currency", 0)
+    change_24h = coin.get("price_change_percentage_24h_in_currency", 0)
+    change_7d = coin.get("price_change_percentage_7d_in_currency", 0)
 
-    # Simplified condition
-    if head > left and head > right and abs(left - right)/head < 0.1:
-        return True
-    return False
+    if change_1h > 1 and change_24h > 3:
+        return "🟢 خریدنے کا اشارہ"
+    elif change_1h < -1 and change_24h < -3:
+        return "🔴 فروخت کا اشارہ"
+    else:
+        return "🟡 انتظار کریں"
 
-# --- Main App ---
-data = get_coin_data(top_n)
+# Main execution
+coins = fetch_top_coins(top_n)
 
-st.markdown("### تجزیہ: AI سگنلز اور پیٹرن ڈیٹیکشن")
+if not coins:
+    st.error("ڈیٹا حاصل نہیں ہو سکا۔ براہ کرم بعد میں کوشش کریں۔")
+else:
+    for coin in coins:
+        with st.container():
+            col1, col2 = st.columns([1, 3])
 
-for coin in data:
-    name = coin['name']
-    symbol = coin['symbol'].upper()
-    price = coin['current_price']
-    change = coin['price_change_percentage_24h']
-    sparkline = coin['sparkline_in_7d']['price']
-    
-    signal_urdu, color = analyze_coin(coin)
-    pattern_detected = detect_head_shoulders(sparkline)
+            with col1:
+                st.image(coin["image"], width=50)
+                st.subheader(f'{coin["name"]} ({coin["symbol"].upper()})')
+                st.metric("قیمت", f"${coin['current_price']}")
+                st.write(ai_signal(coin))
 
-    pattern_text = "🟢 Head & Shoulders پیٹرن ملا" if pattern_detected else "❌ کوئی خاص پیٹرن نہیں"
+            with col2:
+                sparkline = coin.get("sparkline_in_7d", {}).get("price", [])
+                if sparkline:
+                    df = pd.DataFrame(sparkline, columns=["Price"])
+                    st.line_chart(df)
+                else:
+                    st.info("سپارکلائن دستیاب نہیں۔")
 
-    st.markdown(
-        f"""
-        <div style='border:1px solid #ccc; border-radius:10px; padding:10px; margin:10px 0; background-color:#f8f8f8'>
-            <b>{name} ({symbol})</b><br>
-            قیمت: ${price:,} <br>
-            24 گھنٹے تبدیلی: {change:.2f}% <br>
-            <span style='color:{color}; font-weight:bold;'>سگنل: {signal_urdu}</span><br>
-            <span style='font-size: 16px;'>{pattern_text}</span>
-        </div>
-        """, unsafe_allow_html=True
-    )
+                if pattern_detect and sparkline:
+                    pattern = detect_pattern(sparkline)
+                    if pattern:
+                        st.success(f"پیٹرن ڈیٹیکٹ ہوا: {pattern}")
