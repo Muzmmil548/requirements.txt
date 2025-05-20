@@ -16,10 +16,6 @@ headers = {
     "X-CMC_PRO_API_KEY": CMC_API_KEY,
 }
 
-# --- Refresh Button ---
-if st.button("ڈیٹا ریفریش کریں"):
-    st.experimental_rerun()
-
 # --- Fetch Data from CoinMarketCap ---
 @st.cache_data(ttl=60)
 def get_top_coins():
@@ -31,6 +27,9 @@ def get_top_coins():
     }
     response = requests.get(url, headers=headers, params=params)
     return response.json()["data"]
+
+# Refresh button (no rerun needed with autorefresh)
+st.button("ڈیٹا ریفریش کریں (آٹو ہر 30 سیکنڈ بعد ہوگا)")
 
 coins = get_top_coins()
 
@@ -77,3 +76,4 @@ for coin in coins:
 # --- Footer ---
 st.markdown("---")
 st.markdown("یہ ایپ CoinMarketCap API سے ڈیٹا حاصل کر رہی ہے۔ AI سگنلز اور پیٹرن ڈیٹیکشن شامل ہیں۔")
+        
