@@ -2,90 +2,67 @@ import streamlit as st
 import requests
 import pandas as pd
 
-st.set_page_config(layout="wide")
-st.title("پروفیشنل اردو ٹریڈنگ اسسٹنٹ")
+st.set_page_config(page_title="اردو پروفیشنل ٹریڈنگ اسسٹنٹ", layout="wide")
 
-# Sidebar Options
-st.sidebar.header("تجزیہ اختیارات")
-top_n = st.sidebar.selectbox("سرفہرست سکے منتخب کریں", [10, 50], index=0)
-pattern_detect = st.sidebar.checkbox("پیٹرن ڈیٹیکشن آن کریں؟", value=True)
+st.title("اردو پروفیشنل ٹریڈنگ اسسٹنٹ")
+st.markdown("CoinGecko API کے ذریعے تازہ تجزیہ، AI سگنلز، اور چارٹ پیٹرن")
 
-# Function to fetch top coins
-def fetch_top_coins(n=10):
-    url = f"https://api.coingecko.com/api/v3/coins/markets"
-    params = {
-        "vs_currency": "usd",
-        "order": "market_cap_desc",
-        "per_page": n,
-        "page": 1,
-        "sparkline": True,
-        "price_change_percentage": "1h,24h,7d"
-    }
-    response = requests.get(url, params=params)
-    if response.status_code == 200:
-        return response.json()
+# Refresh Button
+if st.button("🔄 Refresh Data"):
+    st.experimental_rerun()
+
+# Select number of coins
+option = st.selectbox("کتنے سکہ دیکھنا چاہتے ہیں؟", ["Top 10", "Top 50"])
+per_page = 10 if option == "Top 10" else 50
+
+# Get data
+url = f"https://api.coingecko.com/api/v3/coins/markets"
+params = {
+    'vs_currency': 'usd',
+    'order': 'market_cap_desc',
+    'per_page': per_page,
+    'page': 1,
+    'sparkline': 'true',
+    'price_change_percentage': '1h,24h,7d'
+}
+response = requests.get(url, params=params)
+data = response.json()
+
+# Show one central TradingView chart
+selected_coin = st.selectbox("کوائن چارٹ دیکھیں:", [coin['symbol'].upper() for coin in data])
+st.components.v1.html(f"""
+    <iframe src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=BINANCE%3A{selected_coin}USDT&interval=15&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&theme=dark&style=1&timezone=exchange" width="100%" height="500" frameborder="0" allowtransparency="true" scrolling="no"></iframe>
+""", height=500)
+
+# Show analysis
+for coin in data:
+    st.subheader(f"{coin['name']} ({coin['symbol'].upper()})")
+
+    # AI Signal
+    p1h = coin.get('price_change_percentage_1h_in_currency', 0)
+    p24h = coin.get('price_change_percentage_24h_in_currency', 0)
+    if p1h > 1 and p24h > 3:
+        signal = "🟢 خریدنے کا اشارہ"
+    elif p1h < -1 and p24h < -3:
+        signal = "🔴 فروخت کا اشارہ"
     else:
-        return []
+        signal = "🟡 انتظار کریں"
 
-# Function to detect simple pattern (placeholder)
-def detect_pattern(prices):
-    if len(prices) < 7:
-        return ""
-    mid = len(prices) // 2
-    if prices[0] < prices[mid] and prices[-1] < prices[mid]:
-        return "Head & Shoulders"
-    return ""
+    st.markdown(f"**AI سگنل:** {signal}")
 
-# AI signal function (basic version)
-def ai_signal(coin):
-    change_1h = coin.get("price_change_percentage_1h_in_currency", 0)
-    change_24h = coin.get("price_change_percentage_24h_in_currency", 0)
-    change_7d = coin.get("price_change_percentage_7d_in_currency", 0)
+    # Pattern Detection (basic)
+    try:
+        spark = coin['sparkline_in_7d']['price']
+        if len(spark) >= 10:
+            if spark[0] < spark[5] and spark[5] > spark[-1] and spark[0] < spark[-1]:
+                st.markdown("**پیٹرن ڈیٹیکٹ ہوا: Head & Shoulders**")
+    except:
+        pass
 
-    if change_1h > 1 and change_24h > 3:
-        return "🟢 خریدنے کا اشارہ"
-    elif change_1h < -1 and change_24h < -3:
-        return "🔴 فروخت کا اشارہ"
-    else:
-        return "🟡 انتظار کریں"
-
-# Function to embed TradingView widget
-def tradingview_widget(symbol):
-    base = symbol.upper()
-    widget_code = f"""
-    <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_{base}&symbol=BINANCE%3A{base}USDT&interval=15&theme=dark&style=1&locale=en" 
-    width="100%" height="300" frameborder="0" allowtransparency="true" scrolling="no"></iframe>
-    """
-    return widget_code
-
-# Main execution
-coins = fetch_top_coins(top_n)
-
-if not coins:
-    st.error("ڈیٹا حاصل نہیں ہو سکا۔ براہ کرم بعد میں کوشش کریں۔")
-else:
-    for coin in coins:
-        with st.container():
-            col1, col2 = st.columns([1, 3])
-
-            with col1:
-                st.image(coin["image"], width=50)
-                st.subheader(f'{coin["name"]} ({coin["symbol"].upper()})')
-                st.metric("قیمت", f"${coin['current_price']}")
-                st.write(ai_signal(coin))
-
-            with col2:
-                sparkline = coin.get("sparkline_in_7d", {}).get("price", [])
-                if sparkline:
-                    df = pd.DataFrame(sparkline, columns=["Price"])
-                    st.line_chart(df)
-                else:
-                    st.info("سپارکلائن دستیاب نہیں۔")
-
-                if pattern_detect and sparkline:
-                    pattern = detect_pattern(sparkline)
-                    if pattern:
-                        st.success(f"پیٹرن ڈیٹیکٹ ہوا: {pattern}")
-
-            # TradingView chart below both columns
-            st.components.v1.html(tradingview_widget(coin["symbol"]), height=320)
+    st.markdown(f"""
+    **قیمت:** ${coin['current_price']}  
+    **1h تبدیلی:** {p1h:.2f}%  
+    **24h تبدیلی:** {p24h:.2f}%  
+    **7d تبدیلی:** {coin.get('price_change_percentage_7d_in_currency', 0):.2f}%
+    """)
+    st.markdown("---")
