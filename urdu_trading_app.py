@@ -1,7 +1,10 @@
 urdu_trading_app.py
-
-import streamlit as st import pandas as pd import requests import time from datetime import datetime from streamlit.components.v1 import iframe
-
+import streamlit as st
+import pandas as pd
+import requests
+import time
+from datetime import datetime
+from streamlit.components.v1 import iframe
 --- Page Config ---
 
 st.set_page_config(page_title="اردو ٹریڈنگ اسسٹنٹ", layout="wide")
