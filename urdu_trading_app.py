@@ -4,24 +4,23 @@ import requests
 import time
 from datetime import datetime
 from streamlit.components.v1 import iframe
+import random
 
-# --- Page Config ---
+# Page Config
 st.set_page_config(page_title="اردو ٹریڈنگ اسسٹنٹ", layout="wide")
 
-# --- App Title ---
-st.markdown(""" 
-## پروفیشنل اردو ٹریڈنگ اسسٹنٹ
-""", unsafe_allow_html=True)
+# Title
+st.markdown("## پروفیشنل اردو ٹریڈنگ اسسٹنٹ", unsafe_allow_html=True)
 
-# --- Manual Refresh Button ---
+# Manual Refresh
 if st.button("دوبارہ لوڈ کریں"):
     st.experimental_rerun()
 
-# --- Select Top Coins ---
+# Select Top Coins
 option = st.selectbox("ٹاپ کوائنز منتخب کریں:", ["Top 10", "Top 50"])
 limit = 10 if option == "Top 10" else 50
 
-# --- Fetch Coin Data ---
+# Fetch Data
 def fetch_coin_data():
     url = f"https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page={limit}&page=1&sparkline=false"
     response = requests.get(url)
@@ -29,11 +28,11 @@ def fetch_coin_data():
 
 data = fetch_coin_data()
 
-# --- Select specific coin from list ---
+# Coin Selection
 coin_names = [coin['name'] for coin in data]
 selected_coin = st.selectbox("کوائن منتخب کریں:", coin_names)
 
-# --- AI Signal Logic ---
+# Signal Logic
 def ai_signal(price, change):
     if change > 1:
         return "🟢", "BUY", True
@@ -47,19 +46,21 @@ def get_tp_sl(price):
     sl = price * 0.98
     return round(tp, 2), round(sl, 2)
 
-# --- CSS for blinking effect ---
+# CSS
 st.markdown("""
 <style>
 @keyframes blinker {
   50% { opacity: 0; }
 }
-.blink {
+.blink-btn {
   animation: blinker 1s linear infinite;
+  display:inline-block;
+  margin-right:6px;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# --- Show selected coin chart ---
+# Show TradingView Candlestick Chart
 symbol = ""
 for coin in data:
     if coin['name'] == selected_coin:
@@ -68,10 +69,12 @@ for coin in data:
 
 if symbol:
     st.markdown(f"### {selected_coin} - Live TradingView Chart")
-    tv_url = f"https://www.tradingview.com/embed-widget/mini-symbol-overview/?symbol=BINANCE:{symbol}&locale=en"
-    iframe(tv_url, height=300)
+    tradingview_widget = f"""
+    <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_{symbol}&symbol=BINANCE%3A{symbol}&interval=15&theme=dark&style=1&locale=en&utm_source=&utm_medium=widget_new&utm_campaign=chart&utm_term=BINANCE%3A{symbol}" width="100%" height="400" frameborder="0" allowtransparency="true" scrolling="no" allowfullscreen></iframe>
+    """
+    st.markdown(tradingview_widget, unsafe_allow_html=True)
 
-# --- Show Signal ---
+# Show AI Signal
 for coin in data:
     if coin['name'] == selected_coin:
         price = coin['current_price']
@@ -90,19 +93,19 @@ for coin in data:
             والیوم: {volume}
         </div>""", unsafe_allow_html=True)
 
-# --- Summary ---
+# Summary
 summary_buy = sum(1 for coin in data if ai_signal(coin['current_price'], coin['price_change_percentage_24h'])[1] == "BUY")
 summary_sell = sum(1 for coin in data if ai_signal(coin['current_price'], coin['price_change_percentage_24h'])[1] == "SELL")
+summary_neutral = limit - summary_buy - summary_sell
 
 st.markdown(f""" 
 #### خلاصہ:
-
-خریداری کے سگنل: **{summary_buy}**
-
-فروخت کے سگنل: **{summary_sell}**
+- 🟢 خریداری سگنل: **{summary_buy}**
+- 🔴 فروخت سگنل: **{summary_sell}**
+- 🟡 نیوٹرل: **{summary_neutral}**
 """, unsafe_allow_html=True)
 
-# --- Chart Pattern Detection (Mocked) ---
+# Chart Patterns
 st.markdown("#### چارٹ پیٹرن ڈیٹیکشن:")
 
 patterns = [
@@ -111,12 +114,12 @@ patterns = [
     "Bullish Flag", "Bearish Flag", "Rectangle", "Triple Top", "Triple Bottom"
 ]
 
-import random
 for pattern in patterns:
     detected = random.choice([True, False])
-    color = "🟢" if detected else "🟡"
-    blink_class = "blink" if detected else "blink"
-    st.markdown(f"<div class='{blink_class}'>{color} {pattern}</div>", unsafe_allow_html=True)
+    icon = "🟢" if detected else "🟡"
+    blink_class = "blink-btn"
+    st.markdown(f"<span class='{blink_class}'>{icon}</span>{pattern}", unsafe_allow_html=True)
 
-# --- Footer ---
+# Footer
+st.markdown("---")
 st.markdown("پروفیشنل اردو ٹریڈنگ اسسٹنٹ - Powered by OpenAI & Streamlit", unsafe_allow_html=True)
