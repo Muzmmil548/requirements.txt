@@ -5,15 +5,16 @@ from datetime import datetime
 from streamlit.components.v1 import iframe
 import random
 
+# --- Config
 st.set_page_config(layout="wide")
 st.title("اردو ٹریڈنگ اسسٹنٹ ایپ (AI سسٹم کے ساتھ)")
 
-# CoinMarketCap API
+# --- CoinMarketCap API
 api_key = "9fee371c-217b-49cd-988a-5c0829ae1ea8"
 headers = {"X-CMC_PRO_API_KEY": api_key}
 cmc_url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
 
-# Fetch market data
+# --- Fetch market data
 def get_market_data(limit=50):
     params = {"start": "1", "limit": limit, "convert": "USD"}
     response = requests.get(cmc_url, headers=headers, params=params)
@@ -28,47 +29,53 @@ def get_market_data(limit=50):
     else:
         return pd.DataFrame()
 
-# AI Pattern Detection (Simulated)
+# --- Simulated AI Pattern Detection
 patterns = [
     "Head & Shoulders", "Inverse H&S", "Double Top", "Double Bottom",
     "Symmetrical Triangle", "Ascending Triangle", "Descending Triangle",
     "Falling Wedge", "Rising Wedge", "Cup & Handle", "Bullish Flag",
     "Bearish Flag", "Rectangle", "Triple Top", "Triple Bottom"
 ]
-
 def detect_patterns():
-    return {p: random.choice(["🟢", "🟡"]) for p in patterns}
+    return {p: random.choice(["🟢", "🟡", "🔴"]) for p in patterns}
 
-# Simulated Buyer/Seller Ratio
-def buyer_seller_ratio():
-    buyers = random.randint(45, 95)
-    sellers = 100 - buyers
-    return buyers, sellers
+# --- Simulated Buyer/Seller Ratio (logic-based)
+def buyer_seller_ratio(price_change):
+    if price_change > 3:
+        return 80, 20
+    elif price_change < -3:
+        return 30, 70
+    else:
+        buyers = random.randint(45, 55)
+        sellers = 100 - buyers
+        return buyers, sellers
 
-# Blinking style
+# --- Blinking style
 def blinking_icon(icon):
     return f"<span style='animation: blink 1s infinite;'>{icon}</span>"
 
-# CSS for blinking
+# --- CSS for blink
 st.markdown("""
-    <style>
-    @keyframes blink {
-        0% {opacity: 1;}
-        50% {opacity: 0.1;}
-        100% {opacity: 1;}
-    }
-    </style>
+<style>
+@keyframes blink {
+  0% {opacity: 1;}
+  50% {opacity: 0.1;}
+  100% {opacity: 1;}
+}
+</style>
 """, unsafe_allow_html=True)
 
-# Auto Refresh Button
+# --- Auto Refresh
 refresh = st.button("ڈیٹا دوبارہ لوڈ کریں (Auto Refresh)")
 if refresh or "df" not in st.session_state:
     st.session_state.df = get_market_data(50)
 
-# Layout
+# --- Layout
 col1, col2 = st.columns([1, 2])
+
 with col1:
     df = st.session_state.df
+    timeframe = st.selectbox("ٹائم فریم منتخب کریں:", ["1m", "15m", "1h", "4h"])
     selected = st.selectbox("کوائن منتخب کریں:", df["Name"] if not df.empty else [])
     if selected:
         coin_info = df[df["Name"] == selected].iloc[0]
@@ -81,23 +88,24 @@ with col2:
         st.subheader(f"{selected} کا لائیو چارٹ:")
         iframe(f"https://www.tradingview.com/widgetembed/?symbol=BINANCE:{symbol}USDT&interval=15&hidesidetoolbar=1", height=420)
 
-# Summary & AI Info
+# --- Summary & AI Info
 if selected:
     st.markdown("---")
     st.subheader("خلاصہ:")
-    st.markdown(f"- موجودہ قیمت: **${price:.4f}**")
-    st.markdown(f"- 24 گھنٹے تبدیلی: **{change:.2f}%**")
-    
+    st.markdown(f"- موجودہ قیمت: ${price:.4f}")
+    st.markdown(f"- 24 گھنٹے تبدیلی: {change:.2f}%")
+
+    # --- TP/SL Logic
     tp = price * 1.03
     sl = price * 0.97
     st.success(f"TP (ٹیک پرافٹ): ${tp:.2f}  |  SL (اسٹاپ لاس): ${sl:.2f}")
-    
-    # Buyer/Seller Ratio
-    buyers, sellers = buyer_seller_ratio()
+
+    # --- Buyer/Seller ratio
+    buyers, sellers = buyer_seller_ratio(change)
     st.info(f"خریدار (Buyers): {buyers}%  |  فروخت کنندہ (Sellers): {sellers}%")
-    
+
     st.markdown("---")
-    st.subheader("AI چارٹ پیٹرن ڈیٹیکشن:")
+    st.subheader(f"AI چارٹ پیٹرن ڈیٹیکشن ({timeframe}):")
     detected = detect_patterns()
     for name, icon in detected.items():
         st.markdown(f"**{name}**: {blinking_icon(icon)}", unsafe_allow_html=True)
