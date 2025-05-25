@@ -1,35 +1,61 @@
-import streamlit as st import pandas as pd import requests import time from datetime import datetime from streamlit.components.v1 import iframe
+import streamlit as st
+import pandas as pd
+import requests
+import time
+from datetime import datetime
+from streamlit.components.v1 import iframe
 
-st.set_page_config(page_title="اردو ٹریڈنگ اسسٹنٹ", layout="wide") st.title("پروفیشنل اردو ٹریڈنگ چیک لسٹ")
+st.set_page_config(page_title="اردو ٹریڈنگ اسسٹنٹ", layout="wide")
 
-بٹن سے صفحہ ریفریش
+st.title("اردو پروفیشنل ٹریڈنگ اسسٹنٹ")
 
-if st.button("دوبارہ لوڈ کریں"): st.experimental_rerun()
+# Coin Selection
+coins = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT']
+selected_coin = st.selectbox("سکہ منتخب کریں", coins)
 
-ٹریڈنگ ویو چارٹ
+# TradingView chart embed
+st.markdown(f"""
+    <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_{selected_coin}&symbol=BINANCE%3A{selected_coin}&interval=5&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&hideideas=1&hidelegend=1&locale=pk_PK"
+        width="100%" height="500" frameborder="0" allowtransparency="true" scrolling="no"></iframe>
+""", unsafe_allow_html=True)
 
-selected_coin = st.selectbox("سکہ منتخب کریں:", ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"]) iframe(f"https://www.tradingview.com/widgetembed/?symbol=BINANCE:{selected_coin}&interval=1&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=Dark&style=1&timezone=Asia/Karachi&withdateranges=1&hideideas=1", height=500)
+# Dummy signal and summary (replace with actual logic later)
+st.subheader(f"{selected_coin} سگنل")
+st.success("سگنل: خریدنے کا مشورہ (Buy Signal)")
+st.info("خلاصہ: قیمت اہم سپورٹ پر ہے، RSI اوور سیلڈ زون میں داخل ہو چکی ہے۔ MACD کراس اوور ہو چکا ہے۔")
 
-سگنل اور خلاصہ
+# Chart Patterns Detection Simulation
+detected_patterns = {
+    "Head & Shoulders": False,
+    "Inverse H&S": True,
+    "Double Top": False,
+    "Double Bottom": False,
+    "Symmetrical Triangle": False,
+    "Ascending Triangle": True,
+    "Descending Triangle": True,
+    "Falling Wedge": True,
+    "Rising Wedge": True,
+    "Cup & Handle": False,
+    "Bullish Flag": False,
+    "Bearish Flag": True,
+    "Rectangle": True,
+    "Triple Top": False,
+    "Triple Bottom": True,
+}
 
-st.subheader(f"سگنل اور خلاصہ برائے: {selected_coin}") st.success("خریدنے کا اشارہ: سبز رنگ") st.warning("انتظار کریں: پیلا رنگ") st.error("فروخت کریں: سرخ رنگ") st.info("نیچرل رجحان: مارکیٹ غیر یقینی ہے")
+st.subheader("چارٹ پیٹرن:")
+for pattern, detected in detected_patterns.items():
+    color = "🟢" if detected else "🟡"
+    blink_style = f"""
+        <span style="animation: blinker 1s linear infinite; color:{'lime' if detected else 'gold'}; font-weight:bold;">
+        {color} {pattern}
+        </span><br>
+        <style>
+        @keyframes blinker {{ 50% {{ opacity: 0; }} }}
+        </style>
+    """
+    st.markdown(blink_style, unsafe_allow_html=True)
 
-چارٹ پیٹرن ڈٹیکشن
-
-st.subheader("چارٹ پیٹرن ڈٹیکشن") patterns = { "Head & Shoulders": "🟡", "Inverse H&S": "🟢", "Double Top": "🟡", "Double Bottom": "🟡", "Symmetrical Triangle": "🟡", "Ascending Triangle": "🟢", "Descending Triangle": "🟢", "Falling Wedge": "🟢", "Rising Wedge": "🟢", "Cup & Handle": "🟡", "Bullish Flag": "🟡", "Bearish Flag": "🟢", "Rectangle": "🟢", "Triple Top": "🟡", "Triple Bottom": "🟢", }
-
-for pattern, status in patterns.items(): st.markdown(f"{status} {pattern}", unsafe_allow_html=True)
-
-خلاصہ نیچے
-
-st.subheader("خلاصہ") st.markdown("""
-
-منتخب سکہ: {selected_coin}
-
-سگنل: سبز = خریدیں، سرخ = فروخت کریں، پیلا = انتظار کریں، نیچرل = غیر یقینی
-
-چارٹ پیٹرن جو 🟢 ہے وہ موجود ہے، جو 🟡 ہے وہ ڈیٹیکٹ نہیں ہوا
-
-چارٹ: ٹریڈنگ ویو لائیو """)
-
-
+# Refresh Button
+if st.button("ریفریش کریں"):
+    st.rerun()
