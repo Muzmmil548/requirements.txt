@@ -3,109 +3,98 @@ import pandas as pd
 import requests
 from datetime import datetime
 from streamlit.components.v1 import iframe
-import random
 
-# --- Config
-st.set_page_config(layout="wide")
-st.title("اردو ٹریڈنگ اسسٹنٹ ایپ (AI سسٹم کے ساتھ)")
+# CoinMarketCap API Configuration
+API_KEY = "9fee371c-217b-49cd-988a-5c0829ae1ea8"
+CMC_URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+headers = {"X-CMC_PRO_API_KEY": API_KEY}
 
-# --- CoinMarketCap API
-api_key = "9fee371c-217b-49cd-988a-5c0829ae1ea8"
-headers = {"X-CMC_PRO_API_KEY": api_key}
-cmc_url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+# TradingView Chart Embed Function
+def show_tradingview_chart(symbol):
+    base = "https://s.tradingview.com/widgetembed/?frameElementId=tradingview_x&symbol="
+    url = f"{base}{symbol}&interval=15&hidesidetoolbar=1&symboledit=1&saveimage=1"
+    st.markdown(f'<iframe src="{url}" width="100%" height="400"></iframe>', unsafe_allow_html=True)
 
-# --- Fetch market data
-def get_market_data(limit=50):
-    params = {"start": "1", "limit": limit, "convert": "USD"}
-    response = requests.get(cmc_url, headers=headers, params=params)
-    if response.status_code == 200:
-        data = response.json()["data"]
-        return pd.DataFrame([{
-            "Name": coin["name"],
-            "Symbol": coin["symbol"],
-            "Price": coin["quote"]["USD"]["price"],
-            "Change(24h)": coin["quote"]["USD"]["percent_change_24h"]
-        } for coin in data])
-    else:
+# Fetch CoinMarketCap data
+@st.cache_data(ttl=600)
+def fetch_market_data():
+    try:
+        response = requests.get(CMC_URL, headers=headers)
+        if response.status_code == 200:
+            data = response.json()["data"]
+            return pd.DataFrame([{
+                "name": item["name"],
+                "symbol": item["symbol"],
+                "price": item["quote"]["USD"]["price"],
+                "change_24h": item["quote"]["USD"]["percent_change_24h"]
+            } for item in data])
+        else:
+            return pd.DataFrame()
+    except:
         return pd.DataFrame()
 
-# --- Simulated AI Pattern Detection
-patterns = [
-    "Head & Shoulders", "Inverse H&S", "Double Top", "Double Bottom",
-    "Symmetrical Triangle", "Ascending Triangle", "Descending Triangle",
-    "Falling Wedge", "Rising Wedge", "Cup & Handle", "Bullish Flag",
-    "Bearish Flag", "Rectangle", "Triple Top", "Triple Bottom"
-]
-def detect_patterns():
-    return {p: random.choice(["🟢", "🟡", "🔴"]) for p in patterns}
+# Chart Pattern Detection Mock
+def get_pattern_status(symbol):
+    import random
+    patterns = [
+        "Head & Shoulders", "Inverse H&S", "Double Top", "Double Bottom",
+        "Symmetrical Triangle", "Ascending Triangle", "Descending Triangle",
+        "Falling Wedge", "Rising Wedge", "Cup & Handle",
+        "Bullish Flag", "Bearish Flag", "Rectangle",
+        "Triple Top", "Triple Bottom"
+    ]
+    return {p: random.choice(["🟢", "🟡"]) for p in patterns}
 
-# --- Simulated Buyer/Seller Ratio (logic-based)
-def buyer_seller_ratio(price_change):
-    if price_change > 3:
-        return 80, 20
-    elif price_change < -3:
-        return 30, 70
+# Urdu Summary Generator (AI-style Mock)
+def generate_summary(name, price, change):
+    if change > 0:
+        mood = "مارکیٹ مثبت رجحان میں ہے"
+    elif change < 0:
+        mood = "مارکیٹ منفی رجحان میں ہے"
     else:
-        buyers = random.randint(45, 55)
-        sellers = 100 - buyers
-        return buyers, sellers
+        mood = "مارکیٹ مستحکم ہے"
+    return f"کرپٹو کوائن {name} کی موجودہ قیمت {round(price, 2)} ڈالر ہے۔ {mood}۔"
 
-# --- Blinking style
-def blinking_icon(icon):
-    return f"<span style='animation: blink 1s infinite;'>{icon}</span>"
+# App UI
+st.title("اردو اسکیلپنگ ٹریڈنگ اسسٹنٹ")
+st.markdown("### کرپٹو کوائن منتخب کریں:")
 
-# --- CSS for blink
-st.markdown("""
-<style>
-@keyframes blink {
-  0% {opacity: 1;}
-  50% {opacity: 0.1;}
-  100% {opacity: 1;}
-}
-</style>
-""", unsafe_allow_html=True)
+data = fetch_market_data()
+if not data.empty:
+    selected_coin = st.selectbox("کوائن منتخب کریں", data["symbol"])
+    coin_row = data[data["symbol"] == selected_coin].iloc[0]
 
-# --- Auto Refresh
-refresh = st.button("ڈیٹا دوبارہ لوڈ کریں (Auto Refresh)")
-if refresh or "df" not in st.session_state:
-    st.session_state.df = get_market_data(50)
+    # TradingView Chart
+    st.markdown("### لائیو چارٹ")
+    show_tradingview_chart(selected_coin + "USD")
 
-# --- Layout
-col1, col2 = st.columns([1, 2])
+    # Summary
+    st.markdown("### خلاصہ")
+    st.info(generate_summary(coin_row['name'], coin_row['price'], coin_row['change_24h']))
 
-with col1:
-    df = st.session_state.df
-    timeframe = st.selectbox("ٹائم فریم منتخب کریں:", ["1m", "15m", "1h", "4h"])
-    selected = st.selectbox("کوائن منتخب کریں:", df["Name"] if not df.empty else [])
-    if selected:
-        coin_info = df[df["Name"] == selected].iloc[0]
-        symbol = coin_info["Symbol"]
-        price = coin_info["Price"]
-        change = coin_info["Change(24h)"]
+    # Signal
+    st.markdown("### سگنل")
+    change = coin_row['change_24h']
+    if change > 2:
+        st.success("🟢 خریدنے کا اشارہ")
+    elif change < -2:
+        st.error("🔴 فروخت کا اشارہ")
+    else:
+        st.warning("🟡 انتظار کریں")
 
-with col2:
-    if selected:
-        st.subheader(f"{selected} کا لائیو چارٹ:")
-        iframe(f"https://www.tradingview.com/widgetembed/?symbol=BINANCE:{symbol}USDT&interval=15&hidesidetoolbar=1", height=420)
+    # Chart Patterns with blinking emoji
+    st.markdown("### چارٹ پیٹرنز کی شناخت:")
+    pattern_status = get_pattern_status(selected_coin)
+    for pattern, status in pattern_status.items():
+        st.markdown(f"<span style='animation: blinker 1s linear infinite;'>{status}</span> {pattern}", unsafe_allow_html=True)
 
-# --- Summary & AI Info
-if selected:
-    st.markdown("---")
-    st.subheader("خلاصہ:")
-    st.markdown(f"- موجودہ قیمت: ${price:.4f}")
-    st.markdown(f"- 24 گھنٹے تبدیلی: {change:.2f}%")
+    st.markdown('''
+        <style>
+        @keyframes blinker {
+            50% { opacity: 0; }
+        }
+        </style>
+    ''', unsafe_allow_html=True)
 
-    # --- TP/SL Logic
-    tp = price * 1.03
-    sl = price * 0.97
-    st.success(f"TP (ٹیک پرافٹ): ${tp:.2f}  |  SL (اسٹاپ لاس): ${sl:.2f}")
-
-    # --- Buyer/Seller ratio
-    buyers, sellers = buyer_seller_ratio(change)
-    st.info(f"خریدار (Buyers): {buyers}%  |  فروخت کنندہ (Sellers): {sellers}%")
-
-    st.markdown("---")
-    st.subheader(f"AI چارٹ پیٹرن ڈیٹیکشن ({timeframe}):")
-    detected = detect_patterns()
-    for name, icon in detected.items():
-        st.markdown(f"**{name}**: {blinking_icon(icon)}", unsafe_allow_html=True)
+else:
+    st.error("ڈیٹا حاصل نہیں ہو سکا۔ برائے مہربانی دوبارہ کوشش کریں۔")
