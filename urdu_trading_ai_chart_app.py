@@ -1,16 +1,18 @@
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 import pandas as pd
 import random
 import requests
 from datetime import datetime
 from streamlit.components.v1 import iframe
-from streamlit_autorefresh import st_autorefresh
+
+# ✅ ✅ ✅ Set Page Config (سب سے اوپر رکھنا ضروری ہے)
+st.set_page_config(layout="wide")
 
 # --- Auto Refresh ---
 st_autorefresh(interval=60 * 1000, key="datarefresh")  # ہر 60 سیکنڈ میں ریفریش
 
-# --- Page Setup ---
-st.set_page_config(layout="wide")
+# --- Page Title ---
 st.title("📊 اردو ٹریڈنگ اسسٹنٹ (AI چارٹ اور سگنلز کے ساتھ)")
 
 # --- Coin Selection ---
@@ -46,7 +48,7 @@ neutral = random.randint(0, 10)
 st.subheader("🤖 AI مارکیٹ سینٹیمنٹ")
 st.info(f"🟢 خریدار: {buyers}% | 🔴 فروخت کنندہ: {sellers}% | ⚪ نیوٹرل: {neutral}%")
 
-# --- AI Signals ---
+# --- AI Signal ---
 signal = "🟢 Buy" if buyers > sellers else "🔴 Sell" if sellers > buyers else "🟡 Hold"
 st.markdown("### 📢 AI ٹریڈ سگنل:")
 st.success(f"📍 سگنل: {signal}")
