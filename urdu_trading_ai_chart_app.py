@@ -36,10 +36,34 @@ st.markdown("---")
 st.subheader("💰 موجودہ قیمت اور تجزیہ")
 st.info(f"🔸 موجودہ قیمت: ${price}")
 
-# --- TP/SL Calculation ---
+# --- TP/SL Box ---
+
 tp = price * 1.03
 sl = price * 0.97
-st.success(f"🎯 ٹیک پرافٹ (TP): ${tp:.2f} | ⛔ اسٹاپ لاس (SL): ${sl:.2f}")
+
+tp_sl_box = f"""
+<div style='background-color:#f9f9f9; padding:15px; border-radius:10px; border:1px solid #ccc; font-size:18px'>
+<b>🎯 ٹیک پرافٹ (TP):</b> <span style='color:green;'>${tp:.2f}</span> <br>
+<b>⛔ اسٹاپ لاس (SL):</b> <span style='color:red;'>${sl:.2f}</span>
+</div>
+"""
+st.markdown(tp_sl_box, unsafe_allow_html=True)
+
+# --- Sentiment Box ---
+
+buyers = random.randint(40, 70)
+sellers = 100 - buyers
+neutral = random.randint(0, 10)
+
+sentiment_box = f"""
+<div style='background-color:#eaf4ff; padding:15px; border-radius:10px; border:1px solid #b3d4fc; font-size:18px'>
+<h4>🤖 AI مارکیٹ سینٹیمنٹ</h4>
+🟢 <b>خریدار:</b> {buyers}%<br>
+🔴 <b>فروخت کنندہ:</b> {sellers}%<br>
+⚪ <b>نیوٹرل:</b> {neutral}%
+</div>
+"""
+st.markdown(sentiment_box, unsafe_allow_html=True)
 
 # --- Sentiment (Simulated) ---
 buyers = random.randint(40, 70)
