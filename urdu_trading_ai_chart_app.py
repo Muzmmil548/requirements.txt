@@ -9,8 +9,8 @@ from streamlit.components.v1 import iframe
 # ✅ ✅ ✅ Set Page Config (سب سے اوپر رکھنا ضروری ہے)
 st.set_page_config(layout="wide")
 
-# --- Auto Refresh ---
-st_autorefresh(interval=60 * 1000, key="datarefresh")  # ہر30 سیکنڈ میں ریفریش
+# --- Auto Refresh ہر 60 سیکنڈ میں ---
+st_autorefresh(interval=60 * 1000, key="datarefresh")
 
 # --- Page Title ---
 st.title("📊 اردو ٹریڈنگ اسسٹنٹ (AI چارٹ اور سگنلز کے ساتھ)")
@@ -48,10 +48,25 @@ neutral = random.randint(0, 10)
 st.subheader("🤖 AI مارکیٹ سینٹیمنٹ")
 st.info(f"🟢 خریدار: {buyers}% | 🔴 فروخت کنندہ: {sellers}% | ⚪ نیوٹرل: {neutral}%")
 
-# --- AI Signal ---
+# --- AI Signal with Blinking ---
 signal = "🟢 Buy" if buyers > sellers else "🔴 Sell" if sellers > buyers else "🟡 Hold"
+color = "green" if signal == "🟢 Buy" else "red" if signal == "🔴 Sell" else "orange"
+
 st.markdown("### 📢 AI ٹریڈ سگنل:")
-st.success(f"📍 سگنل: {signal}")
+
+def blinking_html(text, color):
+    return f"""
+    <div style='animation: blinker 1s linear infinite; color:{color}; font-size:24px; font-weight:bold;'>
+        {text}
+    </div>
+    <style>
+    @keyframes blinker {{
+        50% {{ opacity: 0; }}
+    }}
+    </style>
+    """
+
+st.markdown(blinking_html(f"📍 سگنل: {signal}", color), unsafe_allow_html=True)
 
 # --- Chart Patterns (Simulated) ---
 chart_patterns = [
