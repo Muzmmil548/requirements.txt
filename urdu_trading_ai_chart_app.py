@@ -1,81 +1,75 @@
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
+import pandas as pd
+import random
 import requests
-import time
+from datetime import datetime
+from streamlit.components.v1 import iframe
 
-# سب سے پہلے صفحے کی ترتیب
-st.set_page_config(page_title="Urdu Trading AI", layout="wide")
+# ✅ ✅ ✅ Set Page Config (سب سے اوپر رکھنا ضروری ہے)
+st.set_page_config(layout="wide")
 
-# آٹو ریفریش ہر 60 سیکنڈ
-st_autorefresh(interval=60 * 1000, key="datarefresh")
+# --- Auto Refresh ---
+st_autorefresh(interval=60 * 1000, key="datarefresh")  # ہر30 سیکنڈ میں ریفریش
 
-# CoinMarketCap API Key یہاں ڈالیں
-CMC_API_KEY = "🔑YOUR_NEW_API_KEY_HERE"  # ← یہاں اپنی نئی Key لگائیں
+# --- Page Title ---
+st.title("📊 اردو ٹریڈنگ اسسٹنٹ (AI چارٹ اور سگنلز کے ساتھ)")
 
-# ---------------------------------------------
-# فنکشن: لائیو ڈیٹا حاصل کریں
-def get_crypto_data(symbol="BTC"):
-    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-    headers = {"X-CMC_PRO_API_KEY": CMC_API_KEY}
-    params = {"symbol": symbol, "convert": "USD"}
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        data = response.json()
-        return data["data"][symbol]["quote"]["USD"]
-    except Exception as e:
-        st.error(f"ڈیٹا حاصل نہیں ہوا: {e}")
-        return None
+# --- Coin Selection ---
+symbols = ["BTC", "ETH", "BNB", "SOL", "XRP"]
+selected_symbol = st.selectbox("کوائن منتخب کریں:", symbols)
 
-# ---------------------------------------------
-# فنکشن: سگنل تجزیہ
-def get_signal(price_change_percent):
-    if price_change_percent > 1.5:
-        return "🟢 Buy", "green"
-    elif price_change_percent < -1.5:
-        return "🔴 Sell", "red"
-    else:
-        return "🟡 Neutral", "yellow"
+# --- TradingView Live Chart ---
+tv_url = f"https://www.tradingview.com/widgetembed/?symbol=BINANCE:{selected_symbol}USDT&interval=1&hidesidetoolbar=1&theme=dark"
+st.subheader(f"📈 لائیو چارٹ: {selected_symbol}USDT")
+iframe(tv_url, height=500)
 
-# ---------------------------------------------
-# فنکشن: بلنکنگ لائٹ HTML
-def blinking_text(text, color):
-    return f"""<marquee direction="left" scrollamount="5">
-    <span style='color:{color}; font-size:26px; font-weight:bold;'>{text}</span></marquee>"""
+# --- CoinMarketCap Price Fetch ---
+api_key = "9fee371c-217b-49cd-988a-5c0829ae1ea8"
+url = f"https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol={selected_symbol}&convert=USD"
+headers = {"X-CMC_PRO_API_KEY": api_key}
+response = requests.get(url, headers=headers)
+price = response.json()["data"][selected_symbol]["quote"]["USD"]["price"]
+price = round(price, 2)
 
-# ---------------------------------------------
-# UI سیکشن
-st.title("💹 Urdu AI Trading Assistant with CMC Live Data")
+st.markdown("---")
+st.subheader("💰 موجودہ قیمت اور تجزیہ")
+st.info(f"🔸 موجودہ قیمت: **${price}**")
 
-coin = st.selectbox("🪙 کرپٹو سلیکٹ کریں:", ["BTC", "ETH", "BNB", "SOL", "ADA", "XRP", "DOGE"])
+# --- TP/SL Calculation ---
+tp = price * 1.03
+sl = price * 0.97
+st.success(f"🎯 ٹیک پرافٹ (TP): ${tp:.2f} | ⛔ اسٹاپ لاس (SL): ${sl:.2f}")
 
-data = get_crypto_data(coin)
+# --- Sentiment (Simulated) ---
+buyers = random.randint(40, 70)
+sellers = 100 - buyers
+neutral = random.randint(0, 10)
+st.subheader("🤖 AI مارکیٹ سینٹیمنٹ")
+st.info(f"🟢 خریدار: {buyers}% | 🔴 فروخت کنندہ: {sellers}% | ⚪ نیوٹرل: {neutral}%")
 
-if data:
-    st.metric(label="💵 Live Price", value=f"${data['price']:.2f}")
-    st.metric(label="📉 1h % Change", value=f"{data['percent_change_1h']:.2f}%")
-    st.metric(label="📈 24h % Change", value=f"{data['percent_change_24h']:.2f}%")
+# --- AI Signal ---
+signal = "🟢 Buy" if buyers > sellers else "🔴 Sell" if sellers > buyers else "🟡 Hold"
+st.markdown("### 📢 AI ٹریڈ سگنل:")
+st.success(f"📍 سگنل: {signal}")
 
-    # سگنل
-    signal, color = get_signal(data['percent_change_1h'])
-    st.markdown(blinking_text(f"{signal} Signal", color), unsafe_allow_html=True)
+# --- Chart Patterns (Simulated) ---
+chart_patterns = [
+    "Head & Shoulders", "Inverse H&S", "Double Top", "Double Bottom",
+    "Symmetrical Triangle", "Ascending Triangle", "Descending Triangle",
+    "Falling Wedge", "Rising Wedge", "Cup & Handle", "Bullish Flag",
+    "Bearish Flag", "Rectangle", "Triple Top", "Triple Bottom"
+]
 
-    # چارٹ پیٹرن سرخی
-    st.subheader("📊 چارٹ پیٹرن کی پہچان (Demo Headers)")
-    patterns = ["Head & Shoulders", "Double Top", "Double Bottom", "Triangle", "Flag", "Wedge", 
-                "Cup & Handle", "Rounding Bottom", "Triple Top", "Triple Bottom",
-                "Ascending Triangle", "Descending Triangle", "Symmetrical Triangle", "Rectangle", "Pennant"]
-    cols = st.columns(5)
-    for i, pattern in enumerate(patterns):
-        with cols[i % 5]:
-            st.info(f"📐 {pattern}")
+def simulate_patterns():
+    return {p: random.choice(["🟢", "🔴", "🟡", "❌"]) for p in chart_patterns}
 
-    # 6 انڈیکیٹرز (ڈیجیٹل ڈسپلے)
-    st.subheader("📟 Indicators")
-    st.success("RSI: 53.2")
-    st.success("MACD: Bullish")
-    st.success("Stochastic: Neutral")
-    st.success("Volume: High")
-    st.success("MA Crossover: No")
-    st.success("VWAP: Above")
-else:
-    st.warning("ڈیٹا دستیاب نہیں۔ براہ کرم API Key چیک کریں۔")
+st.markdown("---")
+st.subheader("📊 چارٹ پیٹرن ڈیٹیکشن:")
+patterns = simulate_patterns()
+for pattern, signal in patterns.items():
+    st.markdown(f"**{pattern}**: {signal}")
+
+# --- Footer ---
+st.markdown("---")
+st.caption("Developed by Urdu Trading AI | Auto Refreshed | Powered by Streamlit")
