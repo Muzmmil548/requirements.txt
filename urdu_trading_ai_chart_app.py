@@ -9,8 +9,8 @@ from streamlit.components.v1 import iframe
 # ✅ ✅ ✅ Set Page Config (سب سے اوپر رکھنا ضروری ہے)
 st.set_page_config(layout="wide")
 
-# --- Auto Refresh ہر 60 سیکنڈ میں ---
-st_autorefresh(interval=60 * 1000, key="datarefresh")
+# --- Auto Refresh ہر 10 سیکنڈ میں ---
+st_autorefresh(interval=10 * 1000, key="datarefresh")
 
 # --- Page Title ---
 st.title("📊 اردو ٹریڈنگ اسسٹنٹ (AI چارٹ اور سگنلز کے ساتھ)")
