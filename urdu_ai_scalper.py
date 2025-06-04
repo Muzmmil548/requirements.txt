@@ -7,7 +7,7 @@ from sklearn.ensemble import RandomForestClassifier
 @st.cache_data
 def get_demo_data():
     date_rng = pd.date_range(end=pd.Timestamp.today(), periods=100, freq='5min')
-    prices = np.cumsum(np.random.randn(100) * 0.5 + 100
+    prices = np.cumsum(np.random.randn(100) * 0.5 + 100  # یہاں قوسین بند کی گئی ہیں
     return pd.DataFrame({
         'timestamp': date_rng,
         'Open': prices - np.random.uniform(0.5, 1.5, 100),
