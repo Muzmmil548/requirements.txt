@@ -54,7 +54,7 @@ def ai_mini_decision_logic(prices, indicators):
 
 # ✅ Page Config  
 st.set_page_config(layout="wide")  
-st_autorefresh(interval=60 * 1000, key="datarefresh")  
+st_autorefresh(interval=10 * 1000, key="datarefresh")  
 st.title("📊 اردو ٹریڈنگ اسسٹنٹ (AI چارٹ اور سگنلز کے ساتھ)")  
   
 # ✅ Coin Selection  
