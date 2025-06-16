@@ -3,26 +3,36 @@ from streamlit_autorefresh import st_autorefresh
 import requests
 import pandas as pd
 
-# ✅ Page Config (یہ سب سے اوپر ہونی چاہیے)
-st.set_page_config(page_title="📊 Urdu Scalping Binance Live", layout="wide")
-
 # ✅ Auto-refresh every 10 seconds
 st_autorefresh(interval=10 * 1000, key="refresh")
 
-# ✅ Title and Info
+# ✅ Set Page Config (یہ سب سے اوپر ہونا ضروری ہے)
+st.set_page_config(page_title="📊 Urdu Scalping Binance Live", layout="wide")
+
 st.title("📈 اردو اسکیلپنگ اسسٹنٹ (Top 50 Binance Coins)")
 st.markdown("تمام indicators سمارٹ منی، آرڈر فلو اور Binance کے Live ڈیٹا پر مبنی ہیں۔")
 
 # ✅ Select Coin (Top 50)
 @st.cache_data(ttl=3600)
 def get_top_50_symbols():
-    url = "https://api.binance.com/api/v3/ticker/24hr"
-    data = requests.get(url).json()
-    symbols = sorted(
-        [d['symbol'] for d in data if d['symbol'].endswith('USDT') and not d['symbol'].endswith('BUSD')],
-        key=lambda x: -float(next(d for d in data if d['symbol'] == x)['quoteVolume'])
-    )
-    return symbols[:50]
+    try:
+        url = "https://api.binance.com/api/v3/ticker/24hr"
+        response = requests.get(url)
+        data = response.json()
+
+        if not isinstance(data, list):
+            st.error("⚠️ Binance API سے ڈیٹا حاصل نہیں ہو سکا۔")
+            return ["BTCUSDT"]
+
+        symbols = sorted(
+            [d['symbol'] for d in data if isinstance(d, dict) and d.get('symbol', '').endswith('USDT') and not d['symbol'].endswith('BUSD')],
+            key=lambda x: -float(next(d for d in data if d['symbol'] == x)['quoteVolume'])
+        )
+        return symbols[:50]
+
+    except Exception as e:
+        st.error(f"🚫 ایرر آیا: {e}")
+        return ["BTCUSDT"]
 
 symbols = get_top_50_symbols()
 selected_symbol = st.selectbox("🔍 ٹاپ 50 کوائن منتخب کریں:", symbols, index=symbols.index("BTCUSDT") if "BTCUSDT" in symbols else 0)
@@ -35,7 +45,7 @@ with st.expander("📺 Live TradingView Chart"):
         scrolling=False
     )
 
-# ✅ Live Binance Data Functions
+# ✅ Get Binance Live Data
 def get_price(symbol):
     url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
     response = requests.get(url).json()
@@ -58,7 +68,7 @@ def get_trades(symbol):
 def calculate_effort(bid, ask):
     return round(abs(bid - ask) / max(bid + ask, 1) * 100, 2)
 
-# ✅ Get Live Data
+# ✅ Collect All Data
 price = get_price(selected_symbol)
 bid_volume, ask_volume = get_order_book(selected_symbol)
 buyers, sellers = get_trades(selected_symbol)
@@ -67,7 +77,7 @@ dominancy = "Buyers" if buyers > sellers else "Sellers"
 demand_zone = "Yes" if bid_volume > ask_volume * 1.2 else "No"
 supply_zone = "Yes" if ask_volume > bid_volume * 1.2 else "No"
 
-# ✅ Display Data with Colors
+# ✅ Prepare Data
 data = {
     "Price": price,
     "Bid Volume": bid_volume,
@@ -80,6 +90,7 @@ data = {
     "Supply Zone": supply_zone
 }
 
+# ✅ Show Data with Colors
 for label, value in data.items():
     color = "white"
     if label == "Price":
@@ -102,4 +113,4 @@ for label, value in data.items():
         <b>{label}</b>: {value}</div>
     """, unsafe_allow_html=True)
 
-st.success("✅ یہ Live Top 50 Binance version ہے۔ اگلا مرحلہ: AI Signal + Pattern Detection")
+st.success("✅ یہ Live Binance Top 50 Version ہے۔ اگلا مرحلہ: AI Signal + Pattern Detection")
