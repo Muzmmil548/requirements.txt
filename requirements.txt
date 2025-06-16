@@ -1,4 +1,4 @@
-pip install plotly
+plotly
 streamlit
 streamlit-autorefresh
 pandas
