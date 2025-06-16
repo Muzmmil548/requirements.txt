@@ -1,7 +1,7 @@
+!pip install plotly
 streamlit
 streamlit-autorefresh
 pandas
 requests
 yfinance
 numpy
-plotly
