@@ -3,11 +3,13 @@ from streamlit_autorefresh import st_autorefresh
 import requests
 import pandas as pd
 
+# ✅ Page Config (یہ سب سے اوپر ہونی چاہیے)
+st.set_page_config(page_title="📊 Urdu Scalping Binance Live", layout="wide")
+
 # ✅ Auto-refresh every 10 seconds
 st_autorefresh(interval=10 * 1000, key="refresh")
 
-# ✅ Page Setup
-st.set_page_config(page_title="📊 Urdu Scalping Binance Live", layout="wide")
+# ✅ Title and Info
 st.title("📈 اردو اسکیلپنگ اسسٹنٹ (Top 50 Binance Coins)")
 st.markdown("تمام indicators سمارٹ منی، آرڈر فلو اور Binance کے Live ڈیٹا پر مبنی ہیں۔")
 
@@ -33,7 +35,7 @@ with st.expander("📺 Live TradingView Chart"):
         scrolling=False
     )
 
-# ✅ Get live Binance data
+# ✅ Live Binance Data Functions
 def get_price(symbol):
     url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
     response = requests.get(url).json()
@@ -49,14 +51,14 @@ def get_order_book(symbol):
 def get_trades(symbol):
     url = f"https://api.binance.com/api/v3/trades?symbol={symbol}&limit=50"
     response = requests.get(url).json()
-    buyers = sum(1 for trade in response if not trade['isBuyerMaker'])
-    sellers = sum(1 for trade in response if trade['isBuyerMaker'])
+    buyers = sum(1 for trade in response if trade['isBuyerMaker'] == False)
+    sellers = sum(1 for trade in response if trade['isBuyerMaker'] == True)
     return buyers, sellers
 
 def calculate_effort(bid, ask):
     return round(abs(bid - ask) / max(bid + ask, 1) * 100, 2)
 
-# ✅ Get all data
+# ✅ Get Live Data
 price = get_price(selected_symbol)
 bid_volume, ask_volume = get_order_book(selected_symbol)
 buyers, sellers = get_trades(selected_symbol)
@@ -65,7 +67,7 @@ dominancy = "Buyers" if buyers > sellers else "Sellers"
 demand_zone = "Yes" if bid_volume > ask_volume * 1.2 else "No"
 supply_zone = "Yes" if ask_volume > bid_volume * 1.2 else "No"
 
-# ✅ Prepare display data
+# ✅ Display Data with Colors
 data = {
     "Price": price,
     "Bid Volume": bid_volume,
@@ -78,7 +80,6 @@ data = {
     "Supply Zone": supply_zone
 }
 
-# ✅ Display with dynamic colors
 for label, value in data.items():
     color = "white"
     if label == "Price":
