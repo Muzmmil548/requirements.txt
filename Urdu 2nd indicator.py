@@ -1,43 +1,49 @@
-import streamlit as st import pandas as pd import numpy as np import random
+import streamlit as st from streamlit_autorefresh import st_autorefresh import requests import pandas as pd
 
-st.set_page_config(page_title="📊 Urdu Scalping Assistant", layout="wide")
+✅ Auto-refresh every 30 seconds
 
-st.title("📈 اردو اسکیلپنگ اسسٹنٹ (Smart Money + Volume)") st.markdown("تمام indicators سمارٹ منی اور آرڈر فلو لاجک پر مبنی ہیں۔")
+st_autorefresh(interval=10 * 1000, key="refresh")
 
-Sample data generator (replace with live data source later)
+✅ Page Setup
 
-def get_mock_data(): data = { "Price Change": round(random.uniform(-0.5, 0.5), 3), "Bid Volume": random.randint(500, 2000), "Ask Volume": random.randint(500, 2000), "Buyers": random.randint(300, 1500), "Sellers": random.randint(300, 1500), "Effort": round(random.uniform(1.0, 5.0), 2), "Dominancy": random.choice(["Buyers", "Sellers"]), "Institutional Buying": random.choice(["Low", "Moderate", "High"]), "Institutional Selling": random.choice(["Low", "Moderate", "High"]), "Demand Zone": random.choice(["Yes", "No"]), "Supply Zone": random.choice(["Yes", "No"]) } return pd.DataFrame([data])
+st.set_page_config(page_title="📊 Urdu Scalping Binance Live", layout="wide") st.title("📈 اردو اسکیلپنگ اسسٹنٹ (Top 50 Binance Coins)") st.markdown("تمام indicators سمارٹ منی، آرڈر فلو اور Binance کے Live ڈیٹا پر مبنی ہیں۔")
 
-Fetch mock data
+✅ Select Coin (Top 50)
 
-data = get_mock_data()
+@st.cache_data(ttl=3600) def get_top_50_symbols(): url = "https://api.binance.com/api/v3/ticker/24hr" data = requests.get(url).json() symbols = sorted([d['symbol'] for d in data if d['symbol'].endswith('USDT') and not d['symbol'].endswith('BUSD')], key=lambda x: -float(next(d for d in data if d['symbol'] == x)['quoteVolume'])) return symbols[:50]
 
-Display data in colored format
+symbols = get_top_50_symbols() selected_symbol = st.selectbox("🔍 ٹاپ 50 کوائن منتخب کریں:", symbols, index=symbols.index("BTCUSDT") if "BTCUSDT" in symbols else 0)
 
-for column in data.columns: value = data[column][0] color = "white"
+✅ TradingView Chart Embed
 
-if column in ["Price Change"]:
-    color = "green" if value > 0 else "red" if value < 0 else "gray"
+with st.expander("📺 Live TradingView Chart"): st.components.v1.iframe( f"https://s.tradingview.com/embed-widget/single-quote/?symbol=BINANCE:{selected_symbol}&locale=en", height=250, scrolling=False )
 
-if column in ["Bid Volume", "Buyers", "Institutional Buying"]:
-    color = "green" if isinstance(value, int) and value > 1000 else "orange"
+✅ Get live Binance data
 
-if column in ["Ask Volume", "Sellers", "Institutional Selling"]:
-    color = "red" if isinstance(value, int) and value > 1000 else "orange"
+def get_price(symbol): url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}" response = requests.get(url).json() return float(response['price'])
 
-if column == "Dominancy":
-    color = "green" if value == "Buyers" else "red"
+def get_order_book(symbol): url = f"https://api.binance.com/api/v3/depth?symbol={symbol}&limit=5" response = requests.get(url).json() bid_vol = sum([float(bid[1]) for bid in response['bids']]) ask_vol = sum([float(ask[1]) for ask in response['asks']]) return bid_vol, ask_vol
 
-if column in ["Demand Zone"]:
-    color = "green" if value == "Yes" else "gray"
+def get_trades(symbol): url = f"https://api.binance.com/api/v3/trades?symbol={symbol}&limit=50" response = requests.get(url).json() buyers = sum(1 for trade in response if trade['isBuyerMaker'] == False) sellers = sum(1 for trade in response if trade['isBuyerMaker'] == True) return buyers, sellers
 
-if column in ["Supply Zone"]:
-    color = "red" if value == "Yes" else "gray"
+def calculate_effort(bid, ask): return round(abs(bid - ask) / max(bid + ask, 1) * 100, 2)
 
-st.markdown(f"<div style='font-size:20px; background-color:#222; color:{color}; padding:10px; margin-bottom:5px;'>
-    <b>{column}</b>: {value}</div>", unsafe_allow_html=True)
+Get all data
 
-Note
+price = get_price(selected_symbol) bid_volume, ask_volume = get_order_book(selected_symbol) buyers, sellers = get_trades(selected_symbol) effort = calculate_effort(bid_volume, ask_volume) dominancy = "Buyers" if buyers > sellers else "Sellers" demand_zone = "Yes" if bid_volume > ask_volume * 1.2 else "No" supply_zone = "Yes" if ask_volume > bid_volume * 1.2 else "No"
 
-st.info("📌 یہ صرف ڈیمو ورژن ہے، اصلی مارکیٹ ڈیٹا APIs سے جوڑنے کے بعد خودکار سگنلز بھی شامل ہوں گے۔")
+Prepare display data
+
+data = { "Price": price, "Bid Volume": bid_volume, "Ask Volume": ask_volume, "Buyers": buyers, "Sellers": sellers, "Effort %": effort, "Dominancy": dominancy, "Demand Zone": demand_zone, "Supply Zone": supply_zone }
+
+Display with dynamic colors
+
+for label, value in data.items(): color = "white" if label == "Price": color = "green" elif label in ["Bid Volume", "Buyers"] and value > 1000: color = "green" elif label in ["Ask Volume", "Sellers"] and value > 1000: color = "red" elif label == "Effort %" and value > 10: color = "orange" elif label == "Dominancy": color = "green" if value == "Buyers" else "red" elif label == "Demand Zone": color = "green" if value == "Yes" else "gray" elif label == "Supply Zone": color = "red" if value == "Yes" else "gray"
+
+st.markdown(f"""
+    <div style='font-size:20px; background-color:#222; color:{color}; padding:10px; margin-bottom:5px;'>
+    <b>{label}</b>: {value}</div>
+""", unsafe_allow_html=True)
+
+st.success("✅ یہ Live Top 50 Binance version ہے۔ اگلا مرحلہ: AI Signal + Pattern Detection")
 
