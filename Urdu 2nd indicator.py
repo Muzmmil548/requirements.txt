@@ -11,66 +11,63 @@ st.markdown("Smart Money + Order Flow با‑Binance Live ڈیٹا۔")
 @st.cache_data(ttl=3600)
 def get_top_50_symbols():
     try:
-        data = requests.get("https://data.binance.com/api/v3/ticker/24hr", timeout=10).json()
-        filtered = [(d['symbol'], float(d['quoteVolume'] or 0)) for d in data 
+        data = requests.get("https://data-api.binance.vision/api/v3/ticker/24hr", timeout=10).json()
+        filtered = [(d['symbol'], float(d.get('quoteVolume', 0))) for d in data
                     if d.get('symbol','').endswith('USDT') and 'BUSD' not in d.get('symbol','')]
-        sorted_symbols = sorted(filtered, key=lambda x: x[1], reverse=True)
-        return [s[0] for s in sorted_symbols[:50]] or ["BTCUSDT"]
+        top = sorted(filtered, key=lambda x: x[1], reverse=True)[:50]
+        return [s[0] for s in top] or ["BTCUSDT"]
     except Exception as e:
-        st.error("Symbols لوڈ نہیں ہو سکے، Error: " + str(e))
+        st.error("Symbols لوڈ نہیں ہو سکے: " + str(e))
         return ["BTCUSDT"]
 
 symbols = get_top_50_symbols()
-selected_symbol = st.selectbox("🔍 ٹاپ 50 کوائن منتخب کریں:", symbols, index=symbols.index("BTCUSDT") if "BTCUSDT" in symbols else 0)
+selected_symbol = st.selectbox("🔍 ٹاپ 50 کوائن منتخب کریں:", symbols,
+                               index=symbols.index("BTCUSDT") if "BTCUSDT" in symbols else 0)
 
 with st.expander("📺 Live TradingView Chart"):
     st.components.v1.iframe(
         f"https://s.tradingview.com/embed-widget/single-quote/?symbol=BINANCE:{selected_symbol}&locale=en",
-        height=250, scrolling=False
-    )
+        height=250, scrolling=False)
 
-def get_price(symbol):
-    url = f"https://data.binance.com/api/v3/ticker/price?symbol={symbol}"
-    return float(requests.get(url, timeout=5).json()['price'])
+def get_price(sym):
+    return float(requests.get(f"https://data-api.binance.vision/api/v3/ticker/price?symbol={sym}",
+                              timeout=5).json()['price'])
 
-def get_order_book(symbol):
-    url = f"https://data.binance.com/api/v3/depth?symbol={symbol}&limit=5"
-    ob = requests.get(url, timeout=5).json()
-    return sum(float(bid[1]) for bid in ob['bids']), sum(float(ask[1]) for ask in ob['asks'])
+def get_order_book(sym):
+    ob = requests.get(f"https://data-api.binance.vision/api/v3/depth?symbol={sym}&limit=5",
+                      timeout=5).json()
+    return sum(float(b[1]) for b in ob['bids']), sum(float(a[1]) for a in ob['asks'])
 
-def get_trades(symbol):
-    url = f"https://data.binance.com/api/v3/trades?symbol={symbol}&limit=50"
-    trades = requests.get(url, timeout=5).json()
-    return sum(not t['isBuyerMaker'] for t in trades), sum(t['isBuyerMaker'] for t in trades)
+def get_trades(sym):
+    tr = requests.get(f"https://data-api.binance.vision/api/v3/trades?symbol={sym}&limit=50",
+                      timeout=5).json()
+    return sum(not t['isBuyerMaker'] for t in tr), sum(t['isBuyerMaker'] for t in tr)
 
-def calculate_effort(bid, ask):
-    return round(abs(bid - ask) / max(bid + ask, 1) * 100, 2)
+def calc_effort(b, a):
+    return round(abs(b - a) / max(b + a, 1) * 100, 2)
 
-# Live Data Fetch
 try:
-    price = get_price(selected_symbol)
-    bid_volume, ask_volume = get_order_book(selected_symbol)
-    buyers, sellers = get_trades(selected_symbol)
-    effort = calculate_effort(bid_volume, ask_volume)
-    dominancy = "Buyers" if buyers > sellers else "Sellers"
-    demand_zone = "Yes" if bid_volume > ask_volume * 1.2 else "No"
-    supply_zone = "Yes" if ask_volume > bid_volume * 1.2 else "No"
+    p = get_price(selected_symbol)
+    bv, av = get_order_book(selected_symbol)
+    b, s = get_trades(selected_symbol)
+    effort = calc_effort(bv, av)
+    dom = "Buyers" if b > s else "Sellers"
+    dz = "Yes" if bv > av * 1.2 else "No"
+    sz = "Yes" if av > bv * 1.2 else "No"
 except Exception as e:
-    st.error("Binance data حاصل نہیں ہوا: " + str(e))
-    price = bid_volume = ask_volume = buyers = sellers = effort = "N/A"
-    dominancy = demand_zone = supply_zone = "Error"
+    st.error("Binance سے ڈیٹا نہیں آیا: " + str(e))
+    p = bv = av = b = s = effort = dom = dz = sz = "Error"
 
-data = {"Price": price, "Bid Volume": bid_volume, "Ask Volume": ask_volume, 
-        "Buyers": buyers, "Sellers": sellers, "Effort %": effort, 
-        "Dominancy": dominancy, "Demand Zone": demand_zone, "Supply Zone": supply_zone}
+info = {"Price": p, "Bid Volume": bv, "Ask Volume": av,
+        "Buyers": b, "Sellers": s, "Effort %": effort,
+        "Dominancy": dom, "Demand Zone": dz, "Supply Zone": sz}
 
-for label, value in data.items():
-    color = "white"
-    if label == "Price" and isinstance(value, (float,int)): color = "green"
-    elif label in ["Bid Volume","Buyers"] and isinstance(value, (float,int)) and value>1000: color="green"
-    elif label in ["Ask Volume","Sellers"] and isinstance(value,(float,int)) and value>1000: color="red"
-    elif label=="Effort %" and isinstance(value,(float,int)) and value>10: color="orange"
-    elif label=="Dominancy": color="green" if value=="Buyers" else "red"
-    st.markdown(f"<div style='background:#222;color:{color};padding:8px;border-radius:8px;margin:3px 0'><b>{label}:</b> {value}</div>", unsafe_allow_html=True)
+for lbl, val in info.items():
+    col = "white"
+    if val == "Error": col = "red"
+    elif lbl == "Dominancy": col = "green" if val == "Buyers" else "red"
+    elif lbl == "Effort %" and isinstance(val, (int, float)) and val > 10: col = "orange"
+    st.markdown(f"<div style='background:#222;color:{col};padding:8px;border-radius:8px;margin:3px 0'>"
+                f"<b>{lbl}:</b> {val}</div>", unsafe_allow_html=True)
 
-st.success("✅ Live Urdu Scalping App—اب Binance Live Data چل رہا ہے۔")
+st.success("✅ Live Urdu Scalping App – Binance Live Data آج صحیح آرہا ہے۔")
