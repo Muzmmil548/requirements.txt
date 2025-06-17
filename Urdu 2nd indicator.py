@@ -1,7 +1,10 @@
-import streamlit as st from streamlit_autorefresh import st_autorefresh import requests import pandas as pd
+import streamlit as st
+from streamlit_autorefresh import st_autorefresh
+import requests
+import pandas as pd
+import datetime
 
-✅ Page Config
-
+# ✅ Page Config (یہ سب سے اوپر ہونا چاہیے)
 st.set_page_config(page_title="📊 Urdu Scalping AI Assistant", layout="wide")
 
 ✅ Auto-refresh (ہر 10 سیکنڈ میں)
