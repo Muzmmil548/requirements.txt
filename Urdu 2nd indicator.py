@@ -1,72 +1,76 @@
-import streamlit as st from streamlit_autorefresh import st_autorefresh import requests import pandas as pd
+import streamlit as st from streamlit_autorefresh import st_autorefresh import requests import pandas as pd import plotly.graph_objs as go
 
-✅ Page Config
+Set Page Config
 
-st.set_page_config(page_title="📊 Urdu Scalping AI Assistant", layout="wide")
+st.set_page_config(page_title="📊 Urdu Scalping AI Assistant", layout="wide") st_autorefresh(interval=30 * 1000, key="refresh")
 
-✅ Auto-refresh (ہر 10 سیکنڈ میں)
+Header
 
-st_autorefresh(interval=10 * 1000, key="refresh")
+st.title("📈 اردو اسکیلپنگ اسسٹنٹ (AI Signals + Indicators + Institutional Zones)") st.markdown("تمام Indicators سمارٹ منی، آرڈر فلو، Demand/Supply Zones، اور Binance کے Live ڈیٹا پر مبنی ہیں۔")
 
-✅ ہیڈر
+Get Top 50 Binance USDT Pairs
 
-st.title("📈 اردو اسکیلپنگ اسسٹنٹ (AI Signals + Indicators)") st.markdown("تمام Indicators سمارٹ منی، آرڈر فلو اور Binance کے Live ڈیٹا پر مبنی ہیں۔")
+@st.cache_data(ttl=600) def get_top_50_symbols(): try: url = "https://api.binance.com/api/v3/ticker/24hr" response = requests.get(url, timeout=10) data = response.json() usdt_pairs = [d for d in data if d['symbol'].endswith('USDT') and not d['symbol'].endswith('BUSD')] sorted_pairs = sorted(usdt_pairs, key=lambda x: float(x['quoteVolume']), reverse=True) return [pair['symbol'] for pair in sorted_pairs[:50]] except Exception as e: st.error(f"⛔ Symbols Error: {e}") return []
 
-✅ سپاٹ / فیوچرز انتخاب
+symbols = get_top_50_symbols() if not symbols: st.stop()
 
-market_type = st.radio("📍 مارکیٹ منتخب کریں:", options=["SPOT", "FUTURES"], horizontal=True)
+selected_symbol = st.selectbox("🔍 ٹاپ 50 کوائن منتخب کریں:", symbols)
 
-✅ Binance API endpoint بر اساس مارکیٹ
+Live Chart Embed (TradingView)
 
-def get_api_url(): if market_type == "SPOT": return "https://api.binance.com/api/v3/ticker/24hr" else: return "https://fapi.binance.com/fapi/v1/ticker/24hr"
+with st.expander("📺 Live Indicator Chart"): st.components.v1.iframe(f"https://www.tradingview.com/chart/?symbol=BINANCE:{selected_symbol}", height=500)
 
-@st.cache_data(ttl=600) def get_top_50_symbols(): try: response = requests.get(get_api_url(), timeout=10) if response.status_code != 200: st.warning(f"⚠️ Binance API Status Code: {response.status_code}") return [] data = response.json() usdt_pairs = [d for d in data if d['symbol'].endswith('USDT') and not d['symbol'].endswith('BUSD')] sorted_pairs = sorted(usdt_pairs, key=lambda x: float(x['quoteVolume']), reverse=True) return [pair['symbol'] for pair in sorted_pairs[:50]] except Exception as e: st.error(f"⛔ Error loading symbols: {e}") return []
+Get Live Price
 
-symbols = get_top_50_symbols() if not symbols: st.error("📡 Symbols لوڈ نہیں ہو سکے، Binance API سے مسئلہ ہو سکتا ہے۔") st.stop()
+price_url = f"https://api.binance.com/api/v3/ticker/price?symbol={selected_symbol}" price = float(requests.get(price_url).json()['price'])
 
-selected_symbol = st.selectbox("🔍 ٹاپ 50 کوائن منتخب کریں:", symbols, index=0)
+Get Order Book
 
-✅ TradingView چارٹ
+depth = requests.get(f"https://api.binance.com/api/v3/depth?symbol={selected_symbol}&limit=5").json() bid_vol = sum([float(x[1]) for x in depth['bids']]) ask_vol = sum([float(x[1]) for x in depth['asks']])
 
-with st.expander("📺 Live Indicator Chart (TradingView)"): st.components.v1.iframe( f"https://www.tradingview.com/chart/?symbol=BINANCE:{selected_symbol}", height=500, scrolling=True )
+Get Trades
 
-✅ Live Price
+trades_url = f"https://api.binance.com/api/v3/trades?symbol={selected_symbol}&limit=100" trades = requests.get(trades_url).json() buyers = sum(1 for t in trades if not t['isBuyerMaker']) sellers = sum(1 for t in trades if t['isBuyerMaker'])
 
-def get_price(symbol): url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}" if market_type == "FUTURES": url = f"https://fapi.binance.com/fapi/v1/ticker/price?symbol={symbol}" return float(requests.get(url).json()['price'])
+AI Signal Logic
 
-✅ Order Book
+def ai_signal(bid, ask, buyers, sellers): effort = round(abs(bid - ask) / max(bid + ask, 1) * 100, 2) dominancy = "Buyers" if buyers > sellers else "Sellers" if dominancy == "Buyers" and effort < 10: return "🟢 Buy (Long)" elif dominancy == "Sellers" and effort < 10: return "🔴 Sell (Short)" else: return "🟡 Wait" signal = ai_signal(bid_vol, ask_vol, buyers, sellers)
 
-def get_order_book(symbol): url = f"https://api.binance.com/api/v3/depth?symbol={symbol}&limit=5" if market_type == "FUTURES": url = f"https://fapi.binance.com/fapi/v1/depth?symbol={symbol}&limit=5" data = requests.get(url).json() bid_vol = sum([float(x[1]) for x in data['bids']]) ask_vol = sum([float(x[1]) for x in data['asks']]) return bid_vol, ask_vol
+Institutional Activity
 
-✅ Trades
+threshold = 10000 large_buys = sum(1 for t in trades if not t['isBuyerMaker'] and float(t['qty']) * price > threshold) large_sells = sum(1 for t in trades if t['isBuyerMaker'] and float(t['qty']) * price > threshold) if large_buys > large_sells and large_buys > 5: institutional = "🟢 Institutional Buying" elif large_sells > large_buys and large_sells > 5: institutional = "🔴 Institutional Selling" else: institutional = "🟡 No Strong Signal"
 
-def get_trades(symbol): url = f"https://api.binance.com/api/v3/trades?symbol={symbol}&limit=100" if market_type == "FUTURES": url = f"https://fapi.binance.com/fapi/v1/trades?symbol={symbol}&limit=100" trades = requests.get(url).json() buyers = sum(1 for t in trades if not t['isBuyerMaker']) sellers = sum(1 for t in trades if t['isBuyerMaker']) return buyers, sellers
+Display Data
 
-✅ AI Signal
+st.subheader("📊 Smart Metrics") st.markdown(f"""
 
-def ai_signal(bid, ask, buyers, sellers): effort = round(abs(bid - ask) / max(bid + ask, 1) * 100, 2) dominancy = "Buyers" if buyers > sellers else "Sellers" if dominancy == "Buyers" and effort < 10: return "<span style='color:lime; animation: blinker 1s infinite;'>🟢 Buy (Long)</span>" elif dominancy == "Sellers" and effort < 10: return "<span style='color:red; animation: blinker 1s infinite;'>🔴 Sell (Short)</span>" else: return "<span style='color:gold; animation: blinker 1s infinite;'>🟡 Wait</span>"
+💰 Price: ${price:.2f}
 
-✅ Fetch Data
+📥 Bid Volume: {bid_vol:.2f}
 
-try: price = get_price(selected_symbol) bid_volume, ask_volume = get_order_book(selected_symbol) buyers, sellers = get_trades(selected_symbol) signal = ai_signal(bid_volume, ask_volume, buyers, sellers) except: st.error("📡 Binance API سے ڈیٹا حاصل نہیں ہو سکا") st.stop()
+📤 Ask Volume: {ask_vol:.2f}
 
-✅ Display
+🟢 Buyers: {buyers} | 🔴 Sellers: {sellers}
 
-st.markdown("---") st.subheader("📊 Real-Time Smart Money Metrics")
+🎯 Effort %: {abs(bid_vol - ask_vol) / max(bid_vol + ask_vol, 1) * 100:.2f}%
 
-info = { "🟡 Price": f"${price:.2f}", "📥 Bid Volume": round(bid_volume, 2), "📤 Ask Volume": round(ask_volume, 2), "🟢 Buyers": buyers, "🔴 Sellers": sellers, "🎯 Dominancy": "Buyers" if buyers > sellers else "Sellers", "⚖️ Effort %": round(abs(bid_volume - ask_volume) / max(bid_volume + ask_volume, 1) * 100, 2), "🤖 AI Signal": signal }
+⚖️ Dominancy: {'Buyers' if buyers > sellers else 'Sellers'}
 
-✅ Blinking CSS
+🤖 AI Signal: {signal}
 
-st.markdown("""
+🧠 Institutional Activity: {institutional}
+""")
 
-<style>
-@keyframes blinker {
-  50% { opacity: 0; }
-}
-</style>""", unsafe_allow_html=True)
 
-for label, val in info.items(): st.markdown( f"<div style='font-size:20px; background-color:#111; color:white; padding:8px; margin-bottom:5px;'>" f"<b>{label}</b>: {val}</div>", unsafe_allow_html=True )
+Demand & Supply Zones
 
-st.success("✅ سب کچھ Live اور کامیابی سے چل رہا ہے۔ اب AI سگنلز خودکار آ رہے ہیں۔")
+@st.cache_data(ttl=300) def get_ohlcv(symbol): url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1m&limit=100" raw = requests.get(url).json() df = pd.DataFrame(raw, columns=['time', 'open', 'high', 'low', 'close', 'volume','x','x','x','x','x']) df['close'] = df['close'].astype(float) df['time'] = pd.to_datetime(df['time'], unit='ms') return df[['time', 'close']]
+
+def detect_zones(df): demand = [] supply = [] prices = df['close'].tolist() for i in range(5, len(prices) - 5): if prices[i] < min(prices[i-5:i]) and prices[i] < min(prices[i+1:i+6]): demand.append((df['time'].iloc[i], prices[i])) if prices[i] > max(prices[i-5:i]) and prices[i] > max(prices[i+1:i+6]): supply.append((df['time'].iloc[i], prices[i])) return demand, supply
+
+ohlcv = get_ohlcv(selected_symbol) demand, supply = detect_zones(ohlcv)
+
+fig = go.Figure() fig.add_trace(go.Scatter(x=ohlcv['time'], y=ohlcv['close'], name='Price')) for d in demand: fig.add_trace(go.Scatter(x=[d[0]], y=[d[1]], mode='markers+text', name='Demand', marker=dict(color='green', size=10))) for s in supply: fig.add_trace(go.Scatter(x=[s[0]], y=[s[1]], mode='markers+text', name='Supply', marker=dict(color='red', size=10))) st.plotly_chart(fig, use_container_width=True)
+
+st.success("✅ مکمل AI اسسٹنٹ، انسٹی ٹیوشن سگنل اور زونز کام کر رہے ہیں")
 
