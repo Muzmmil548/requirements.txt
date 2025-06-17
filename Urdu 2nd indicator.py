@@ -2,7 +2,7 @@ import streamlit as st from streamlit_autorefresh import st_autorefresh import r
 
 Set Page Config
 
-st.set_page_config(page_title="📊 Urdu Scalping AI Assistant", layout="wide") st_autorefresh(interval=30 * 1000, key="refresh")
+st.set_page_config(page_title="📊 Urdu Scalping AI Assistant", layout="wide") st_autorefresh(interval=10 * 1000, key="refresh")
 
 Header
 
