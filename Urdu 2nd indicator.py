@@ -7,8 +7,8 @@ import random
 # ✅ Page Config
 st.set_page_config(page_title="📈 Urdu Scalping AI (Binance)", layout="wide")
 
-# ✅ Auto-refresh every 10 seconds
-st_autorefresh(interval=10 * 1000, key="refresh")
+# ✅ Auto-refresh every 50 seconds
+st_autorefresh(interval=50 * 1000, key="refresh")
 
 st.title("📈 اردو اسکیلپنگ اسسسٹنٹ (Binance Live + AI)")
 st.markdown("تمام indicators Binance Live API اور AI سسٹم پر مبنی ہیں۔")
