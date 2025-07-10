@@ -1,0 +1,77 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+st.set_page_config(page_title="1-Minute Candle Predictor", layout="centered")
+
+st.title("📈 1-Minute Candle Predictor")
+st.markdown("""
+Welcome to the **1-Minute Candle Predictor!**  
+Upload your **1-minute price data (CSV)** for immediate analysis:  
+- ✅ EMA (8, 21) crossover detection  
+- ✅ RSI (30, 70) signal levels  
+- ✅ Prediction: Buy / Sell / Hold
+""")
+
+uploaded_file = st.file_uploader("📤 Upload 1-Minute Chart Data (CSV)", type=["csv"])
+
+def calculate_ema(data, span):
+    return data['Close'].ewm(span=span, adjust=False).mean()
+
+def calculate_rsi(data, period=14):
+    delta = data['Close'].diff()
+    gain = np.where(delta > 0, delta, 0)
+    loss = np.where(delta < 0, -delta, 0)
+    avg_gain = pd.Series(gain).rolling(window=period).mean()
+    avg_loss = pd.Series(loss).rolling(window=period).mean()
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+if uploaded_file:
+    data = pd.read_csv(uploaded_file)
+    st.subheader("📊 Uploaded Data Preview")
+    st.write(data.tail())
+
+    if 'Close' in data.columns:
+        data['EMA8'] = calculate_ema(data, 8)
+        data['EMA21'] = calculate_ema(data, 21)
+        data['RSI'] = calculate_rsi(data)
+
+        last_row = data.iloc[-1]
+        ema8 = last_row['EMA8']
+        ema21 = last_row['EMA21']
+        rsi = last_row['RSI']
+
+        st.subheader("✅ Analysis Result")
+        st.write(f"**EMA8:** {ema8:.2f}")
+        st.write(f"**EMA21:** {ema21:.2f}")
+        st.write(f"**RSI:** {rsi:.2f}")
+
+        # Prediction Logic
+        prediction = "HOLD 🟡"
+        if ema8 > ema21 and rsi < 70:
+            prediction = "BUY 🟢"
+        if ema8 < ema21 and rsi > 30:
+            prediction = "SELL 🔴"
+        if rsi < 30:
+            prediction = "BUY 🟢 (RSI Oversold)"
+        if rsi > 70:
+            prediction = "SELL 🔴 (RSI Overbought)"
+
+        st.success(f"**Prediction: {prediction}**")
+
+        st.subheader("📈 Chart")
+        fig, ax = plt.subplots()
+        ax.plot(data['Close'], label='Close Price')
+        ax.plot(data['EMA8'], label='EMA 8')
+        ax.plot(data['EMA21'], label='EMA 21')
+        ax.legend()
+        st.pyplot(fig)
+
+    else:
+        st.error("❗ CSV must contain a 'Close' column.")
+
+else:
+    st.info("Please upload a CSV file with 1-minute candle data including 'Close' prices.")
